@@ -3,11 +3,33 @@
 //
 #include "LDPC_5G.h"
 #include<iostream>
+#include <LDPC_helper.h>
 
 using namespace std;
 
+int main1() {
+    vector<int> v1 = {0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0};
+    vector<int> v2 = {0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0};
+    vector<int> v3 = {1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0};
+    vector<int> v4 = {0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0};
+    vector<int> v5 = {0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+    vector<vector<int>> v{v1, v2, v3, v4, v5};
+    vector<vector<int>> res;
+    Gaussian_Elimination(v);
+    coutmat(v);
+    cout << endl;
+    getParityPoint(res, v);
+    coutmat(res);
+    cout << endl;
+    return 0;
+
+}
+
 int main() {
-    LDPC_5G<int> *ldpc = new LDPC_5G<int>(512, 1024, 1);
-    std::cout << ldpc->getCodeLength() << "   " << ldpc->getInfLength() << "  " << std::endl;
-    system("pause");
+    // LDPC_5G *ldpc = new LDPC_5G(5200, 10000, 2);
+    //cout << -1 % 20 << endl;
+    //system("pause");
+    main1();
+
+    return 0;
 }

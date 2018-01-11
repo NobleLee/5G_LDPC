@@ -3,11 +3,13 @@
 //
 
 #include "LDPC_5G.h"
-#include <cstdarg>
+#include "LDPC_helper.h"
 #include <unordered_map>
 #include <math.h>
 
-using std::unordered_map;
+#include <cstdarg>
+
+using namespace std;
 
 // 不同类型的crc长度列表
 int crcLengthList[5] = {24, 24, 24, 16, 11};
@@ -82,106 +84,103 @@ unordered_map<int, int> *initZLsMap() {
 
 /**
  * @tparam EncodeType
- * @param adress  需要填充1的起始地址
- * @param count   填充1的位置的数目
- * @param ...     填充1的位置
+ * @param adress  需要填充fillThing的起始地址
+ * @param count   填充fillThing的位置的数目
+ * @param ...     填充fillThing的位置
  * @return
  */
-template<class EncodeType>
-template<class T>
-int fillAddress(EncodeType *addr, T fillThing, int count, ...) {
+template<class EncodeType, class T>
+int fillAddress(EncodeType *addr, T fillThing, T sub, int count, ...) {
     va_list args;
     va_start(args, count);
     for (int i = 0; i < count; ++i) {
         int index = va_arg(args, int);
-        addr[index] = fillThing;
+        addr[sub - index] = fillThing;
     }
     va_end(args);
     return 0;
 }
 
 /**
- * @tparam EncodeType
- * @param type CRC校验选择的类型
- * @return CRC校验的数组
+ * 初始化CRC多项式
+ * @param crcList
  */
-template<class EncodeType>
-EncodeType *generate_g(int type) {
-    static EncodeType *crcList[5];
-    static bool inited = false;
-    if (!inited) {
-        EncodeType *A_24 = new EncodeType[crcLengthList[0] + 1]();
-        EncodeType *B_24 = new EncodeType[crcLengthList[1] + 1]();
-        EncodeType *C_24 = new EncodeType[crcLengthList[2] + 1]();
-        EncodeType *O_16 = new EncodeType[crcLengthList[3] + 1]();
-        EncodeType *O_11 = new EncodeType[crcLengthList[4] + 1]();
-        crcList[0] = A_24;
-        crcList[1] = B_24;
-        crcList[2] = C_24;
-        crcList[3] = O_16;
-        crcList[4] = O_11;
-        //CRC_A初始化
-        fillAddress(A_24, 1, 14, 0, 1, 3, 4, 5, 6, 7, 10, 11, 14, 17, 18, 23, 24);
-        //CRC_B初始化
-        fillAddress(B_24, 1, 6, 0, 1, 5, 6, 23, 24);
-        //CRC_C初始化
-        fillAddress(C_24, 1, 13, 0, 1, 2, 4, 8, 12, 13, 15, 17, 20, 21, 23, 24);
-        //CRC_16
-        fillAddress(O_16, 1, 4, 0, 5, 12, 16);
-        //CRC_11
-        fillAddress(O_11, 1, 5, 0, 5, 9, 10, 11);
-    }
-    return crcList[type];
+void generate_g(vector<int *> &crcList) {
+    int *A_24 = new int[crcLengthList[0] + 1]();
+    int *B_24 = new int[crcLengthList[1] + 1]();
+    int *C_24 = new int[crcLengthList[2] + 1]();
+    int *O_16 = new int[crcLengthList[3] + 1]();
+    int *O_11 = new int[crcLengthList[4] + 1]();
+    //CRC_A初始化
+    fillAddress(A_24, 1, 24, 14, 0, 1, 3, 4, 5, 6, 7, 10, 11, 14, 17, 18, 23, 24);
+    //CRC_B初始化
+    fillAddress(B_24, 1, 24, 6, 0, 1, 5, 6, 23, 24);
+    //CRC_C初始化
+    fillAddress(C_24, 1, 24, 13, 0, 1, 2, 4, 8, 12, 13, 15, 17, 20, 21, 23, 24);
+    //CRC_16
+    fillAddress(O_16, 1, 16, 4, 0, 5, 12, 16);
+    //CRC_11
+    fillAddress(O_11, 1, 11, 5, 0, 5, 9, 10, 11);
+    crcList.push_back(A_24);
+    crcList.push_back(B_24);
+    crcList.push_back(C_24);
+    crcList.push_back(O_16);
+    crcList.push_back(O_11);
 }
 
-template<class EncodeType>
-void LDPC_5G::getCRC(EncodeType encoder, int crcType) {
+void LDPC_5G::tempSpaceInit() {
+    CRCTemp = new int[infLength + globalCRCLength];
+    bitAddCRC = new int[infLength + globalCRCLength];
+}
 
+void LDPC_5G::getCRC(int *infbit, const int infbitLength, const int crcType) {
+    // 根据CRC的类型，取出CRC长度
     int g_length = crcLengthList[crcType];
-    EncodeType *g = generate_g(crcType);
-    int i, flag = infLength - g_length;
-
-    EncodeType *temp = (EncodeType *) malloc(sizeof(EncodeType) * g_length);
-    for (i = 0; i < g_length; i++) {
-        temp[i] = encoder[flag + i]; //取出值
-    }
-    int j = 0;
-    while (flag >= 0) {
-        if (temp[g_length - 1] == 1)//最高位为1
-        {
-            if (flag != 0) {
-                for (i = g_length - 2; i >= 0; i--) {
-                    temp[i + 1] = (temp[i] + g[i]) % 2;//模2加再向高位移一位
-                }
-                temp[0] = encoder[flag - 1];
-            } else {
-                for (i = g_length - 1; i >= 0; i--) {
-                    temp[i] = (temp[i] + g[i]) % 2;
-                }
-            }
-        } else {
-            if (flag != 0) {
-                for (i = g_length - 2; i >= 0; i--) {
-                    temp[i + 1] = temp[i];
-                }
-                temp[0] = encoder[flag - 1];
+    int *g = crcList[crcType];
+    //int *temp = new int[infLength + g_length]();
+    memcpy(CRCTemp, infbit, infbitLength * sizeof(int));
+    memset(CRCTemp + infbitLength, 0, g_length * sizeof(int));
+    int cur = 0, i = 0;//比较的游标，指示目前在哪个位置
+    while (cur < infbitLength) {
+        //i = cur;
+        if (CRCTemp[cur] == 1) {
+            for (i = cur; i < cur + g_length; i++) {
+                CRCTemp[i] = (CRCTemp[i] + g[i - cur]) % 2;
             }
         }
-        flag--;
+        cur++;
     }
-    for (i = 0; i < (g_length - 1); i++) {
-        encoder[i] = temp[i];//校验位在最左边
+    memcpy(infbit + infbitLength, CRCTemp + infbitLength, g_length * sizeof(int));
+}
+
+bool LDPC_5G::checkCRC(int *in, const int length, const int crcType) {
+    int g_length = crcLengthList[crcType];
+    int *g = crcList[crcType];
+    memcpy(CRCTemp, in, length * sizeof(int));
+    int cur = 0, i = 0, sum = 0;//比较的游标，指示目前在哪个位置
+    while (cur < length - g_length + 1) {
+        //i = cur;
+        if (CRCTemp[cur] == 1) {
+            for (i = cur; i < cur + g_length; i++) {
+                CRCTemp[i] = (CRCTemp[i] + g[i - cur]) % 2;
+            }
+        }
+        cur++;
+
     }
-    free(temp);
+    for (; cur < length; cur++) {
+        sum += CRCTemp[cur];
+    }
+    return sum == 0 ? true : false;
 }
 
 void LDPC_5G::crcInit() {
     // 初始化总码块的CRC矩阵
-    codeCRC = generate_g(globalCRCType);
-    codeCRCLength = crcLengthList[globalCRCType];
+    globalCRCLength = crcLengthList[globalCRCType];
     // 初始化码块分割后的crc
-    blockCRC = generate_g(blockCRCType);
     blockCRCLength = crcLengthList[blockCRCType];
+    if (crcList.size() == 0)
+        generate_g(crcList);
 }
 
 inline int getKbGraph2(const int infLengthCRC) {
@@ -194,13 +193,59 @@ inline int getKbGraph2(const int infLengthCRC) {
     return 6;
 }
 
+
+void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
+    // 存放提案中所有的矩阵
+    vector<vector<int>> parityMats;
+    string filename = type == 1 ? "LDPC_P1_38.212.txt" : "LDPC_P2_38.212.txt";
+    readMatrixFromFile(filename, parityMats);
+
+    const int row = type == 1 ? 46 : 42;
+    const int columns = type == 1 ? 68 : 52;
+
+    int **H_base = new int *[row]();
+    for (int i = 0; i < row; i++) {
+        H_base[i] = new int[columns];
+        memset(H_base[i], -1, columns * sizeof(int));
+    }
+    // 提取对应的校验矩阵
+    int loc_x = 0, loc_y = 0;
+    for (int i = 0; i < parityMats.size(); i++) {
+        loc_x = parityMats[i][0];
+        loc_y = parityMats[i][1];
+        H_base[loc_x][loc_y] = parityMats[i][I_ls + 2] % zLength;
+    }
+    //产生校验矩阵
+    int **P_Mats = new int *[row * zLength]; //校验矩阵
+    for (int i = 0; i < row * zLength; i++) {
+        P_Mats[i] = new int[columns * zLength]();
+    }
+    expendParityMatrix(P_Mats, H_base, row, columns, zLength);
+    /// 提取边连接关系-译码使用
+    getEdgeFrom_VNandCN(P_Mats, row * zLength, columns * zLength, edgeVNToVN);
+
+    /// 高斯消元，产生生成矩阵
+    Gaussian_Elimination(P_Mats, row * zLength, columns * zLength);
+
+    /// 产生生成矩阵校验关系-编码使用
+    getParityPoint(parityBit, P_Mats, row * zLength, columns * zLength);
+
+    for (int i = 0; i < row; i++) {
+        free(H_base[i]);
+    }
+    for (int i = 0; i < row * zLength; i++) {
+        free(P_Mats[i]);
+    }
+}
+
 /**
  * 根据码块长度和Kb来计算：扩展因子、基础矩阵的索引元素
  * @param Kb
  * @param K_ 码块长度
- * @return 返回索引
+ * @param zLength 扩展因子
+ * @return 返回基础矩阵的索引
  */
-int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_) {
+int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_, int &zLength) {
     unordered_map<int, int> *map = initZLsMap();
     int temp = ceil(K_ * 1.0 / Kb);
     while (temp < 385) {
@@ -214,14 +259,14 @@ int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_) {
 }
 
 /**
- * 初始化数据，包括码块数目，扩展因子等
+ * 初始化数据，包括码块数目，边的连接关系，生成和校验矩阵，扩展因子等
  */
 void LDPC_5G::init() {
     crcInit();
-    int infLengthCRC = infLength + codeCRCLength;
+    int infLengthCRC = infLength + globalCRCLength;
 
     //默认方案1配置
-    int Kcb = type == 1 ? 8448 : 3840;
+    int Kcb = type == 1 ? 8448 : 3840;  //单个码块最大长度
     int Kb = type == 1 ? 22 : getKbGraph2(infLengthCRC);
 
     if (infLengthCRC <= Kcb) {
@@ -229,11 +274,19 @@ void LDPC_5G::init() {
         blockNum = 1;
         blockLength = infLengthCRC;
     } else {
-
+        blockNum = ceil(infLengthCRC * 1.0 / (Kb - blockCRCLength));
+        blockLength = (infLengthCRC + blockNum * blockCRCLength) / blockNum;
     }
-    const int I_ls = getZlengthAndI_ls(Kb, blockLength);
-
-
+    int zLength = 0;
+    const int I_ls = getZlengthAndI_ls(Kb, blockLength, zLength);
+    /*初始化编码矩阵**/
+    getGenerateMatrix(I_ls, zLength);
+    tempSpaceInit();
 }
 
+
+int *LDPC_5G::encoder(int *in, int *out) {
+    memcpy(bitAddCRC, in, infLength * sizeof(int));
+    getCRC(bitAddCRC, infLength, globalCRCType);
+}
 

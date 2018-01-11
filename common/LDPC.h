@@ -11,7 +11,6 @@
 #include <string>
 
 // 表示编码的bit的类型
-template<class EncodeType>
 class LDPC {
 public:
     // 编码前长度
@@ -23,18 +22,18 @@ public:
 
 public:
     // 编码输出的内存指针
-    EncodeType *coders = nullptr;
+    int *coders = nullptr;
     // 信道译码之后的似然比--迭代用到
     double *DECOutputLLR = nullptr;
     // bit的似然比
     double *infoBitLLR = nullptr;
     // 译码的bit
-    EncodeType *decodebit = nullptr;
+    int *decodebit = nullptr;
 
 public:
 
-    EncodeType *encoder(EncodeType const *const encoder) {
-        encoder(encoder, coders);
+    int *encoder(int *infbit) {
+        return encoder(infbit, coders);
     }
 
     /**
@@ -42,7 +41,7 @@ public:
      * @param out   输出的编码bit的地址
      * @return     返回要编码结果的指针
      */
-    virtual EncodeType *encoder(EncodeType const *const encoder, EncodeType *out);
+    int *encoder(int *infbit, int *out);
 
     int softDecode(double *channelLLR) {
         if (DECOutputLLR == nullptr) {
@@ -76,7 +75,7 @@ public:
     */
     LDPC(unsigned long infLength, unsigned codeLength, int type, bool ismalloc) : codeLength(codeLength), infLength(infLength) {
         if (ismalloc) {
-            coders = new EncodeType[codeLength]();
+            coders = new int[codeLength]();
         }
     }
 
@@ -85,7 +84,7 @@ public:
     }
 
     // getters
-    EncodeType *getCoders() const {
+    int *getCoders() const {
         if (coders != 0)
             return coders;
         else {

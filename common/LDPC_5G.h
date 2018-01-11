@@ -10,59 +10,58 @@
 
 using namespace std;
 
-template<class EncodeType>
-
-class LDPC_5G : public LDPC<EncodeType> {
+class LDPC_5G : public LDPC {
 private:
-
     const string name = "R1-38.212";
     // CRC相关的
     int globalCRCType = 0;
+    int globalCRCLength;
+    // 提案中固定为24
     int blockCRCType = 1;
-    EncodeType *codeCRC;
-    int codeCRCLength;
-    EncodeType *blockCRC;
     int blockCRCLength;
 
     int blockNum;
     int blockLength;
+    /// 存储变量节点之间的关系，译码要用
+    vector<vector<vector<int>>> edgeVNToVN;
+    /// 存储信息bit的校验关系，编码使用
+    vector<vector<int>> parityBit;
+    /// 存放crc多项式数组
+    static vector<int *> crcList;
+    /// 临时空间
+    int *CRCTemp;
+    int *bitAddCRC;
 
-    //扩展因子
-    int zLength;
-
-    EncodeType *encoderCRC;
-
-    vector<vector<int> *> *generateMatrix;
-
+private:
     void init();
 
     void crcInit();
 
-    int getZlengthAndI_ls(const int Kb, const int K_);
+    int getZlengthAndI_ls(const int Kb, const int K_, int &zLength);
+
+    void tempSpaceInit();
 
 public:
-    LDPC_5G(unsigned long infLength, unsigned long codeLength, int type) : LDPC<EncodeType>(infLength, codeLength, type) {
+    LDPC_5G(unsigned long infLength, unsigned long codeLength, int type) : LDPC(infLength, codeLength, type) {
         init();
     };
 
+    int *encoder(int *in, int *out);
 
-    EncodeType *encoder(EncodeType const *const encoder, EncodeType *out) {
-        getCRC(encoder, globalCRCType);
-        return nullptr;
-    }
+    void getCRC(int *infbit, const int infbitLength, const int crcType);
 
-    void getCRC(EncodeType encoder, int crcType);
+    bool checkCRC(int *in, const int length, const int crcType);
 
     /**
      * @param indexSet -i_ls
      * @param zlength  -矩阵扩展因子
      * @return
      */
-    vector<vector<int> *> *getGenerateMatrix(int indexSet, int zlength) {
-        vector<vector<int> *> *generateMatrix = new vector<vector<int> *>;
+    void getGenerateMatrix(int indexSet, int zlength);
 
-        return generateMatrix;
-
+    ~LDPC_5G() {
+        delete[] CRCTemp;
+        delete[] bitAddCRC;
     }
 };
 
