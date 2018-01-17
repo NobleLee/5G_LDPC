@@ -131,6 +131,15 @@ void generate_g(vector<int *> &crcList) {
 void LDPC_5G::tempSpaceInit() {
     CRCTemp = new int[infLength + globalCRCLength];
     bitAddCRC = new int[infLength + globalCRCLength];
+
+    for (int i = 0; i < blockNum; i++) {
+        blockBit.push_back(new int[blockLength]);
+    }
+
+
+    for (int i = 0; i < blockNum; i++) {
+        afterEncode[i] = new int[blockCodeLength];
+    }
 }
 
 void LDPC_5G::getCRC(int *infbit, const int infbitLength, const int crcType) {
@@ -181,6 +190,43 @@ void LDPC_5G::crcInit() {
     blockCRCLength = crcLengthList[blockCRCType];
     if (crcList.size() == 0)
         generate_g(crcList);
+}
+
+/**
+ * 对bit进行码块分割，同时在每个码块后加入CRC
+ */
+void LDPC_5G::blockSegmentation(int *bitAddCRC, vector<int *> &blockBit) {
+    for (int i = 0; i < blockNum; i++) {
+        if (i == 0) {
+            memcpy(blockBit[i], bitAddCRC, blockInfBitLength[i] * sizeof(int));
+            getCRC(blockBit[i], blockInfBitLength[i], blockCRCType);
+            for (int j = blockInfBitLength[i] + blockCRCLength; j < blockLength; j++)
+                blockBit[i][j] = 0;
+        } else {
+            memcpy(blockBit[i], bitAddCRC + i * blockInfBitLength[i - 1], blockInfBitLength[i] * sizeof(int));
+            getCRC(blockBit[i], blockInfBitLength[i], blockCRCType);
+            for (int j = blockInfBitLength[i] + blockCRCLength; j < blockLength; j++)
+                blockBit[i][j] = 0;
+        }
+    }
+}
+
+/**
+ * 利用经过高斯消元的校验矩阵的校验关系进行编码
+ * @param blockBit 待编码码块
+ * @param afterEncode 编码之后的码块
+ */
+void LDPC_5G::LDPC_Fast_Encode(vector<int *> &blockBit, vector<int *> &afterEncode) {
+    int temp = 0, i = 0, j = 0, k = 0, l = 0;
+    for (i = 0; i < blockNum; i++) {
+        memcpy(afterEncode[i], blockBit[i] + 2 * zLength, (blockLength - 2 * zLength) * sizeof(int));
+        for (k = 0, j = blockLength - 2 * zLength; j < blockCodeLength; j++, k++) {
+            temp = 0;
+            for (l = 0; l < parityBit[k].size(); l++)
+                temp += blockBit[i][parityBit[k][l]];
+            afterEncode[i][j] = temp % 2;
+        }
+    }
 }
 
 inline int getKbGraph2(const int infLengthCRC) {
@@ -275,10 +321,18 @@ void LDPC_5G::init() {
         blockLength = infLengthCRC;
     } else {
         blockNum = ceil(infLengthCRC * 1.0 / (Kb - blockCRCLength));
-        blockLength = (infLengthCRC + blockNum * blockCRCLength) / blockNum;
+
+        int usualBlockInfLength = infLengthCRC / blockNum;
+        for (int i = 0; i < blockNum - 1; i++)
+            blockInfBitLength.push_back(usualBlockInfLength);
+        int lastBlockLength = usualBlockInfLength + infLengthCRC % blockNum;
+
+        blockInfBitLength.push_back(lastBlockLength);
     }
-    int zLength = 0;
+
     const int I_ls = getZlengthAndI_ls(Kb, blockLength, zLength);
+    blockLength = type == 1 ? 22 * zLength : 10 * zLength;
+    blockCodeLength = type == 1 ? 66 * zLength : 50 * zLength;
     /*初始化编码矩阵**/
     getGenerateMatrix(I_ls, zLength);
     tempSpaceInit();
@@ -287,6 +341,14 @@ void LDPC_5G::init() {
 
 int *LDPC_5G::encoder(int *in, int *out) {
     memcpy(bitAddCRC, in, infLength * sizeof(int));
+    /// 加入全局CRC
     getCRC(bitAddCRC, infLength, globalCRCType);
+    /// 码块分割
+    blockSegmentation(bitAddCRC, blockBit);
+    /// 快速编码
+    LDPC_Fast_Encode(blockBit, afterEncode);
+    /// 速率匹配
 }
+
+
 
