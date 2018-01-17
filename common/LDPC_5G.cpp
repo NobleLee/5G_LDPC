@@ -8,6 +8,7 @@
 #include <math.h>
 
 #include <cstdarg>
+#include <cstring>
 
 using namespace std;
 
@@ -128,10 +129,98 @@ void generate_g(vector<int *> &crcList) {
     crcList.push_back(O_11);
 }
 
+/**
+ * 初始化速率匹配初始位置
+ */
+void LDPC_5G::initStartPosition() {
+    if (type == 1) {
+        switch (rvId) {
+            case 0:
+                startingPosition = 0;
+                break;
+            case 1:
+                startingPosition = 17 * blockCodeLength / (66 * zLength) * zLength;
+                break;
+            case 2:
+                startingPosition = 33 * blockCodeLength / (66 * zLength) * zLength;
+                break;
+            case 3:
+                startingPosition = 56 * blockCodeLength / (66 * zLength) * zLength;
+                break;
+            default:
+                cout << "rvId error" << endl;
+                system("pause");
+        }
+    } else {
+        switch (rvId) {
+            case 0:
+                startingPosition = 0;
+                break;
+            case 1:
+                startingPosition = 13 * blockCodeLength / (50 * zLength) * zLength;
+                break;
+            case 2:
+                startingPosition = 25 * blockCodeLength / (50 * zLength) * zLength;
+                break;
+            case 3:
+                startingPosition = 50 * blockCodeLength / (50 * zLength) * zLength;
+                break;
+            default:
+                cout << "rvId error" << endl;
+                system("pause");
+        }
+    }
+
+}
+
 void LDPC_5G::tempSpaceInit() {
     CRCTemp = new int[infLength + globalCRCLength];
     bitAddCRC = new int[infLength + globalCRCLength];
+
+    for (int i = 0; i < blockNum; i++) {
+        blockBit.push_back(new int[blockLength]);
+    }
+
+
+    for (int i = 0; i < blockNum; i++) {
+        afterEncode.push_back(new int[blockCodeLength]);
+    }
+
+    int usualLength = codeLength / blockNum;
+    int lastLength = usualLength + codeLength % blockNum;
+    for (int i = 0; i < blockNum - 1; i++) {
+        rateMatchLength.push_back(usualLength);
+        rateMatchPosition.push_back(new int[usualLength]);
+
+    }
+    rateMatchPosition.push_back(new int[lastLength]);
+    rateMatchLength.push_back(lastLength);
+
+    for (int i = 0; i < blockNum; i++) {
+        deRateMatchLLR.push_back(new double[blockCodeLength]);
+    }
 }
+
+/**
+ * 根据码块长度和Kb来计算：扩展因子、基础矩阵的索引元素
+ * @param Kb
+ * @param K_ 码块长度
+ * @param zLength 扩展因子,会在这个函数中初始化
+ * @return 返回基础矩阵的索引
+ */
+int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_, int &zLength) {
+    unordered_map<int, int> *map = initZLsMap();
+    int temp = ceil(K_ * 1.0 / Kb);
+    while (temp < 385) {
+        auto zSet = map->find(temp);
+        if (zSet != map->end()) {
+            zLength = zSet->first;
+            return zSet->second;
+        }
+        temp++;
+    }
+}
+
 
 void LDPC_5G::getCRC(int *infbit, const int infbitLength, const int crcType) {
     // 根据CRC的类型，取出CRC长度
@@ -193,7 +282,6 @@ inline int getKbGraph2(const int infLengthCRC) {
     return 6;
 }
 
-
 void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
     // 存放提案中所有的矩阵
     vector<vector<int>> parityMats;
@@ -238,23 +326,104 @@ void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
     }
 }
 
-/**
- * 根据码块长度和Kb来计算：扩展因子、基础矩阵的索引元素
- * @param Kb
- * @param K_ 码块长度
- * @param zLength 扩展因子
- * @return 返回基础矩阵的索引
- */
-int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_, int &zLength) {
-    unordered_map<int, int> *map = initZLsMap();
-    int temp = ceil(K_ * 1.0 / Kb);
-    while (temp < 385) {
-        auto zSet = map->find(temp);
-        if (zSet != map->end()) {
-            zLength = zSet->first;
-            return zSet->second;
+void LDPC_5G::rateMatchPositionInit() {
+    const int blockNullRight = blockLength;
+
+    int *temp = new int[rateMatchLength[blockNum - 1]];
+
+    for (int i = 0; i < blockNum; i++) {
+
+        int k = 0, j = startingPosition;
+        /// k 速率匹配结果索引
+        /// j 待速率匹配索引
+        // bit selection
+        const int blockNullLeft = blockInfBitLength[i] - 2 * zLength;
+        while (k < rateMatchLength[i]) {
+            j = j % blockCodeLength;
+            if (j < blockNullLeft && j >= blockNullRight) {
+                temp[k++] = j;
+            }
+            j++;
         }
-        temp++;
+        // bit interleaving
+        k = 0;
+        int tlength = ceil(1.0 * rateMatchLength[i] / modulationMod);
+        for (int jj = 0; jj < tlength; jj++) {
+            for (int ii = 0; ii < modulationMod; ii++) {
+                if (ii * tlength + jj >= rateMatchLength[i]) continue;
+                rateMatchPosition[i][k++] = temp[ii * tlength + jj];
+            }
+        }
+    }
+
+    delete[] temp;
+
+}
+
+/**
+ * 对bit进行码块分割，同时在每个码块后加入CRC
+ */
+void LDPC_5G::blockSegmentation(int *bitAddCRC, vector<int *> &blockBit) {
+    for (int i = 0; i < blockNum; i++) {
+        if (i == 0) {
+            memcpy(blockBit[i], bitAddCRC, blockInfBitLength[i] * sizeof(int));
+            getCRC(blockBit[i], blockInfBitLength[i], blockCRCType);
+            for (int j = blockInfBitLength[i] + blockCRCLength; j < blockLength; j++)
+                blockBit[i][j] = 0;
+        } else {
+            memcpy(blockBit[i], bitAddCRC + i * blockInfBitLength[i - 1], blockInfBitLength[i] * sizeof(int));
+            getCRC(blockBit[i], blockInfBitLength[i], blockCRCType);
+            for (int j = blockInfBitLength[i] + blockCRCLength; j < blockLength; j++)
+                blockBit[i][j] = 0;
+        }
+    }
+}
+
+/**
+ * 利用经过高斯消元的校验矩阵的校验关系进行编码
+ * @param blockBit 待编码码块
+ * @param afterEncode 编码之后的码块
+ */
+void LDPC_5G::LDPC_Fast_Encode(vector<int *> &blockBit, vector<int *> &afterEncode) {
+    int temp = 0, i = 0, j = 0, k = 0, l = 0;
+    for (i = 0; i < blockNum; i++) {
+        // 将信息部分信息bit复制到结果
+        memcpy(afterEncode[i], blockBit[i] + 2 * zLength, (blockLength - 2 * zLength) * sizeof(int));
+        for (k = 0, j = blockLength - 2 * zLength; j < blockCodeLength; j++, k++) {
+            temp = 0;
+            for (l = 0; l < parityBit[k].size(); l++)
+                temp += blockBit[i][parityBit[k][l]];
+            afterEncode[i][j] = temp % 2;
+        }
+    }
+}
+
+/**
+ * 进行速率匹配
+ * @param afterEncode 待速率匹配的bit
+ * @param afterRateMatch 速率匹配之后的bit
+ */
+void LDPC_5G::RateMatch(vector<int *> &afterEncode, int *out) {
+    int k = 0;
+    for (int i = 0; i < blockNum; i++) {
+        for (int j = 0; j < rateMatchLength[i]; j++)
+            out[k++] = afterEncode[i][rateMatchPosition[i][j]];
+    }
+}
+
+/**
+ * 进行解速率匹配
+ * @param channelInput
+ * @param deRateMatchLLR
+ */
+void LDPC_5G::deRateMatch(double *channelInput, vector<double *> &deRateMatchLLR) {
+
+    int k = 0;
+    for (int i = 0; i < blockNum; i++) {
+        memset(deRateMatchLLR[0], 0, sizeof(double) * blockCodeLength);
+        for (int j = 0; j < rateMatchLength[i]; j++) {
+            deRateMatchLLR[i][rateMatchPosition[i][j]] += channelInput[k++];
+        }
     }
 }
 
@@ -275,18 +444,79 @@ void LDPC_5G::init() {
         blockLength = infLengthCRC;
     } else {
         blockNum = ceil(infLengthCRC * 1.0 / (Kb - blockCRCLength));
-        blockLength = (infLengthCRC + blockNum * blockCRCLength) / blockNum;
+
+        int usualBlockInfLength = infLengthCRC / blockNum;
+        for (int i = 0; i < blockNum - 1; i++)
+            blockInfBitLength.push_back(usualBlockInfLength);
+        int lastBlockLength = usualBlockInfLength + infLengthCRC % blockNum;
+
+        blockInfBitLength.push_back(lastBlockLength);
     }
-    int zLength = 0;
+
     const int I_ls = getZlengthAndI_ls(Kb, blockLength, zLength);
+    initStartPosition();
+    blockLength = type == 1 ? 22 * zLength : 10 * zLength;
+    blockCodeLength = type == 1 ? 66 * zLength : 50 * zLength;
     /*初始化编码矩阵**/
     getGenerateMatrix(I_ls, zLength);
     tempSpaceInit();
+    rateMatchPositionInit();
 }
 
 
 int *LDPC_5G::encoder(int *in, int *out) {
     memcpy(bitAddCRC, in, infLength * sizeof(int));
+    /// 加入全局CRC
     getCRC(bitAddCRC, infLength, globalCRCType);
+    /// 码块分割
+    blockSegmentation(bitAddCRC, blockBit);
+    /// 快速编码
+    LDPC_Fast_Encode(blockBit, afterEncode);
+    /// 速率匹配
+    RateMatch(afterEncode, out);
+    return out;
 }
+
+int singleBPDecode(double *inputLLR, const int inputOutLength, double *outputLLR, vector<vector<vector<int>>> &edgeVNToVN) {
+    for (int i = 0; i < inputOutLength; i++) {
+        outputLLR[i] = 0;
+        for (int j = 0; j < edgeVNToVN[i].size(); j++) {
+            double temp = 1;
+            for (int k = 0; k < edgeVNToVN[i][j].size(); k++)
+                temp *= tanh(0.5 * inputLLR[edgeVNToVN[i][j][k]]);
+            outputLLR[i] += 2.0 / tanh(temp);
+        }
+    }
+}
+
+int singleMinSumDecode(double *inputLLR, const int inputOutLength, double *outputLLR, vector<vector<vector<int>>> &edgeVNToVN) {
+    static int count = 0;//计算有多少个-1
+    static double min = 0;
+    static double temp = 0;
+    for (int i = 0; i < inputOutLength; i++) {
+        outputLLR[i] = 0;
+        for (int j = 0; j < edgeVNToVN[i].size(); j++) {
+            count = 0;//计算有多少个-1
+            min = 0;//绝对值最小的数字
+            for (int k = 0; k < edgeVNToVN[i][j].size(); k++) {
+                temp = inputLLR[edgeVNToVN[i][j][k]];
+                count += temp > 0 ? 0 : 1;
+                min = abs(temp) > min ? abs(temp) : min;
+            }
+            outputLLR[i] = min * (count % 2 == 1 ? -1 : 1);
+        }
+    }
+}
+
+/**
+ * @param channelLLR   信道似然比
+ * @param DECOutputLLR 经过信道译码之后的似然比-去掉信道信息
+ * @param infoBitLLR   信息bit似然比
+ * @return 迭代次数
+ */
+int LDPC_5G::decode(double *channelLLR, double *DECOutputLLR, double *infoBitLLR) {
+    deRateMatch(channelLLR, deRateMatchLLR);
+
+}
+
 

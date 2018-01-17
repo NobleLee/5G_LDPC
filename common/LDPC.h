@@ -18,7 +18,7 @@ public:
     // 编码之后输出长度
     const unsigned long codeLength;
     // 采用方案1 还是2
-    const int type = 1;
+    const int type;
 
 public:
     // 编码输出的内存指针
@@ -63,7 +63,7 @@ public:
 
 
     // construct function
-    LDPC(unsigned long infLength, unsigned codeLength, int type) : codeLength(codeLength), infLength(infLength) {
+    LDPC(unsigned long infLength, unsigned codeLength, int type) : codeLength(codeLength), infLength(infLength),type(type) {
         LDPC(infLength, codeLength, type, true);
     }
 
@@ -73,7 +73,7 @@ public:
     * @param type    采用哪个方案
     * @param ismalloc 输出编码时是传递空间，还是返回空间
     */
-    LDPC(unsigned long infLength, unsigned codeLength, int type, bool ismalloc) : codeLength(codeLength), infLength(infLength) {
+    LDPC(unsigned long infLength, unsigned codeLength, int type, bool ismalloc) : codeLength(codeLength), infLength(infLength),type(type) {
         if (ismalloc) {
             coders = new int[codeLength]();
         }
