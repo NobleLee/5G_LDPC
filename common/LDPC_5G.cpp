@@ -221,7 +221,12 @@ int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_, int &zLength) {
     }
 }
 
-
+/**
+ * CRC编码
+ * @param infbit 输入bit（包含CRC要填充的bit）
+ * @param infbitLength 有效信息长度
+ * @param crcType 加CRC的类型
+ */
 void LDPC_5G::getCRC(int *infbit, const int infbitLength, const int crcType) {
     // 根据CRC的类型，取出CRC长度
     int g_length = crcLengthList[crcType];
@@ -242,6 +247,13 @@ void LDPC_5G::getCRC(int *infbit, const int infbitLength, const int crcType) {
     memcpy(infbit + infbitLength, CRCTemp + infbitLength, g_length * sizeof(int));
 }
 
+/**
+ * 进行CRC校验，返回校验结果
+ * @param in 要校验的输入
+ * @param length in指向地址长度
+ * @param crcType crc校验的类型
+ * @return CRC校验结果
+ */
 bool LDPC_5G::checkCRC(int *in, const int length, const int crcType) {
     int g_length = crcLengthList[crcType];
     int *g = crcList[crcType];
@@ -263,6 +275,9 @@ bool LDPC_5G::checkCRC(int *in, const int length, const int crcType) {
     return sum == 0 ? true : false;
 }
 
+/**
+ * 有关CRC校验的参数
+ */
 void LDPC_5G::crcInit() {
     // 初始化总码块的CRC矩阵
     globalCRCLength = crcLengthList[globalCRCType];
@@ -272,6 +287,11 @@ void LDPC_5G::crcInit() {
         generate_g(crcList);
 }
 
+/**
+ * 获得第二种编码方式的Kb
+ * @param infLengthCRC
+ * @return Kb
+ */
 inline int getKbGraph2(const int infLengthCRC) {
     if (infLengthCRC > 640)
         return 10;
@@ -282,6 +302,11 @@ inline int getKbGraph2(const int infLengthCRC) {
     return 6;
 }
 
+/**
+ * 初始化矩阵：包括编码要有的校验bit的位置，译码要用的校验关系
+ * @param I_ls 选择校验矩阵的索引
+ * @param zLength 扩展因子
+ */
 void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
     // 存放提案中所有的矩阵
     vector<vector<int>> parityMats;
@@ -326,6 +351,9 @@ void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
     }
 }
 
+/**
+ * 初始化速率匹配的索引，用于速率匹配和解速率匹配
+ */
 void LDPC_5G::rateMatchPositionInit() {
     const int blockNullRight = blockLength;
 
@@ -477,7 +505,14 @@ int *LDPC_5G::encoder(int *in, int *out) {
     return out;
 }
 
-int singleBPDecode(double *inputLLR, const int inputOutLength, double *outputLLR, vector<vector<vector<int>>> &edgeVNToVN) {
+/**
+ * 经典BP译码的单次迭代
+ * @param inputLLR 输入似然比
+ * @param inputOutLength 输入输出的长度
+ * @param outputLLR 输出地燃比
+ * @param edgeVNToVN 节点的校验关系
+ */
+void singleBPDecode(double *inputLLR, const int inputOutLength, double *outputLLR, vector<vector<vector<int>>> &edgeVNToVN) {
     for (int i = 0; i < inputOutLength; i++) {
         outputLLR[i] = 0;
         for (int j = 0; j < edgeVNToVN[i].size(); j++) {
@@ -489,7 +524,14 @@ int singleBPDecode(double *inputLLR, const int inputOutLength, double *outputLLR
     }
 }
 
-int singleMinSumDecode(double *inputLLR, const int inputOutLength, double *outputLLR, vector<vector<vector<int>>> &edgeVNToVN) {
+/**
+ * 简化的BP译码，MinSum算法
+ * @param inputLLR
+ * @param inputOutLength
+ * @param outputLLR
+ * @param edgeVNToVN
+ */
+void singleMinSumDecode(double *inputLLR, const int inputOutLength, double *outputLLR, vector<vector<vector<int>>> &edgeVNToVN) {
     static int count = 0;//计算有多少个-1
     static double min = 0;
     static double temp = 0;
