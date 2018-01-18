@@ -63,6 +63,9 @@ void expendParityMatrix(int **P_Mats, int **H_base, const int row, const int col
 void getParityPoint(vector<vector<int>> &res, int **P_Mats, const int row, const int columns);
 
 
+void getParityMatrixPoint(int **P_mats, const unsigned long row, const unsigned long column, vector<vector<int>> &req);
+
+
 void getParityPoint(vector<vector<int>> &res, vector<vector<int>> &P_Mats);
 
 void Gaussian_Elimination(vector<vector<int>> &matrix);

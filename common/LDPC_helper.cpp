@@ -125,6 +125,23 @@ void getEdgeFrom_VNandCN(int **P_mats, const unsigned long row, const unsigned l
 }
 
 /**
+ * 按列提取校验矩阵中不为0的点的索引
+ * @param P_mats 校验矩阵
+ * @param row
+ * @param column
+ * @param req
+ */
+void getParityMatrixPoint(int **P_mats, const unsigned long row, const unsigned long column, vector<vector<int>> &req) {
+    for (unsigned long i = 0; i < row; i++) {
+        vector<int> tmp;
+        for (int j = 0; j < column; j++) {
+            if (P_mats[i][j] == 1) tmp.push_back(j);
+        }
+        req.push_back(tmp);
+    }
+}
+
+/**
  * 将H_base中的矩阵按照扩展因子扩展，结果存放在P_Mats
  * @param P_Mats 存放扩展结果
  * @param H_base 存放基础矩阵

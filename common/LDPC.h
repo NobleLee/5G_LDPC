@@ -59,11 +59,13 @@ public:
      * @param infoBitLLR   信息bit似然比
      * @return 迭代次数
      */
-    int decode(double *channelLLR, double *DECOutputLLR, double *infoBitLLR);
+    int decode(double *channelLLR, double *DECOutputLLR, double *infoBitLLR, const int decodeType, const int maxIter);
+
+    int decode(double *channelLLR, double *DECOutputLLR, const int decodeType, const int maxIter);
 
 
     // construct function
-    LDPC(unsigned long infLength, unsigned codeLength, int type) : codeLength(codeLength), infLength(infLength),type(type) {
+    LDPC(unsigned long infLength, unsigned codeLength, int type) : codeLength(codeLength), infLength(infLength), type(type) {
         LDPC(infLength, codeLength, type, true);
     }
 
@@ -73,7 +75,7 @@ public:
     * @param type    采用哪个方案
     * @param ismalloc 输出编码时是传递空间，还是返回空间
     */
-    LDPC(unsigned long infLength, unsigned codeLength, int type, bool ismalloc) : codeLength(codeLength), infLength(infLength),type(type) {
+    LDPC(unsigned long infLength, unsigned codeLength, int type, bool ismalloc) : codeLength(codeLength), infLength(infLength), type(type) {
         if (ismalloc) {
             coders = new int[codeLength]();
         }
