@@ -128,6 +128,50 @@ void generate_g(vector<int *> &crcList) {
     crcList.push_back(O_11);
 }
 
+/**
+ * 初始化速率匹配初始位置
+ */
+void LDPC_5G::getStartPosition() {
+    if (type == 1) {
+        switch (rvId) {
+            case 0:
+                startingPosition = 0;
+                break;
+            case 1:
+                startingPosition = 17 * blockCodeLength / (66 * zLength) * zLength;
+                break;
+            case 2:
+                startingPosition = 33 * blockCodeLength / (66 * zLength) * zLength;
+                break;
+            case 3:
+                startingPosition = 56 * blockCodeLength / (66 * zLength) * zLength;
+                break;
+            default:
+                cout << "rvId error" << endl;
+                system("pause");
+        }
+    } else {
+        switch (rvId) {
+            case 0:
+                startingPosition = 0;
+                break;
+            case 1:
+                startingPosition = 13 * blockCodeLength / (50 * zLength) * zLength;
+                break;
+            case 2:
+                startingPosition = 25 * blockCodeLength / (50 * zLength) * zLength;
+                break;
+            case 3:
+                startingPosition = 50 * blockCodeLength / (50 * zLength) * zLength;
+                break;
+            default:
+                cout << "rvId error" << endl;
+                system("pause");
+        }
+    }
+
+}
+
 void LDPC_5G::tempSpaceInit() {
     CRCTemp = new int[infLength + globalCRCLength];
     bitAddCRC = new int[infLength + globalCRCLength];
@@ -288,7 +332,7 @@ void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
  * 根据码块长度和Kb来计算：扩展因子、基础矩阵的索引元素
  * @param Kb
  * @param K_ 码块长度
- * @param zLength 扩展因子
+ * @param zLength 扩展因子,会在这个函数中初始化
  * @return 返回基础矩阵的索引
  */
 int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_, int &zLength) {
@@ -331,6 +375,7 @@ void LDPC_5G::init() {
     }
 
     const int I_ls = getZlengthAndI_ls(Kb, blockLength, zLength);
+    startingPosition =
     blockLength = type == 1 ? 22 * zLength : 10 * zLength;
     blockCodeLength = type == 1 ? 66 * zLength : 50 * zLength;
     /*初始化编码矩阵**/
@@ -348,6 +393,7 @@ int *LDPC_5G::encoder(int *in, int *out) {
     /// 快速编码
     LDPC_Fast_Encode(blockBit, afterEncode);
     /// 速率匹配
+
 }
 
 

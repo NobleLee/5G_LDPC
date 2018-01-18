@@ -28,6 +28,11 @@ private:
     int blockCodeLength;
     /// 每个码块中有效的信息bit的长度，包含所有的crc
     vector<int> blockInfBitLength;
+    /// 用于速率匹配选择的方式
+    const int rvId = 0;
+    /// 速率匹配开始的位置
+    int startingPosition;
+
 
     /// 存储变量节点之间的关系，译码要用
     vector<vector<vector<int>>> edgeVNToVN;
@@ -47,6 +52,8 @@ private:
     void crcInit();
 
     int getZlengthAndI_ls(const int Kb, const int K_, int &zLength);
+
+    void getStartPosition();
 
     void tempSpaceInit();
 
