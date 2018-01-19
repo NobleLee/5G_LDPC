@@ -6,7 +6,7 @@
 #include "LDPC_helper.h"
 #include <unordered_map>
 #include <math.h>
-
+#include <windows.h>
 #include <cstdarg>
 #include <cstring>
 
@@ -359,21 +359,22 @@ void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
  * 初始化速率匹配的索引，用于速率匹配和解速率匹配
  */
 void LDPC_5G::rateMatchPositionInit() {
-    const int blockNullRight = blockLength;
+    const int blockNullRight = blockLength - 2 * zLength;
     // 分配最长的空间
     int *temp = new int[rateMatchLength[blockNum - 1]];
 
     for (int i = 0; i < blockNum; i++) {
-
-        int k = 0, j = startingPosition;
         /// k 速率匹配结果索引
         /// j 待速率匹配索引
         // bit selection
+        int k = 0, j = startingPosition;
         const int blockNullLeft = blockInfBitLength[i] - 2 * zLength;
         while (k < rateMatchLength[i]) {
             j = j % blockCodeLength;
-            if (j < blockNullLeft && j >= blockNullRight) {
+            if (j < blockNullLeft || j >= blockNullRight) {
                 temp[k++] = j;
+            } else {
+                j = blockNullRight - 1;
             }
             j++;
         }
@@ -463,9 +464,9 @@ void LDPC_5G::init() {
     if (infLengthCRC <= Kcb) {
         // 不进行码块分割时
         blockNum = 1;
-        blockLength = infLengthCRC;
+        blockInfBitLength.push_back(infLengthCRC);
     } else {
-        blockNum = ceil(infLengthCRC * 1.0 / (Kb - blockCRCLength));
+        blockNum = ceil(infLengthCRC * 1.0 / (Kcb - blockCRCLength));
 
         int usualBlockInfLength = infLengthCRC / blockNum;
         for (int i = 0; i < blockNum - 1; i++)
@@ -475,7 +476,7 @@ void LDPC_5G::init() {
         blockInfBitLength.push_back(lastBlockLength);
     }
 
-    const int I_ls = getZlengthAndI_ls(Kb, blockLength, zLength);
+    const int I_ls = getZlengthAndI_ls(Kb, blockInfBitLength[0], zLength);
     initStartPosition();
     blockLength = type == 1 ? 22 * zLength : 10 * zLength;
     blockCodeLength = type == 1 ? 66 * zLength : 50 * zLength;

@@ -198,6 +198,14 @@ void getParityPoint(vector<vector<int>> &res, vector<vector<int>> &P_Mats) {
     }
 };
 
+
+void vec_mod2sum(vector<int> &v1, vector<int> &v2) {
+    for (int i = 0; i < v1.size(); i++) {
+        if (v1[i] == v2[i]) v1[i] = 0;
+        else v1[i] = 1;
+    }
+}
+
 void Gaussian_Elimination(vector<vector<int>> &matrix) {
 
     const int row = matrix.size();
@@ -227,12 +235,7 @@ void Gaussian_Elimination(vector<vector<int>> &matrix) {
     }
 }
 
-inline void vec_mod2sum(vector<int> &v1, vector<int> &v2) {
-    for (int i = 0; i < v1.size(); i++) {
-        if (v1[i] == v2[i]) v1[i] = 0;
-        else v1[i] = 1;
-    }
-}
+
 
 void coutmat(const vector<vector<int>> &matrix) {
     for (auto &i:matrix) {

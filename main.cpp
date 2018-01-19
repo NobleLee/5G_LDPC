@@ -4,7 +4,7 @@
 #include "LDPC_5G.h"
 #include<iostream>
 #include <LDPC_helper.h>
-
+#include <windows.h>
 using namespace std;
 
 int main1() {
@@ -26,9 +26,17 @@ int main1() {
 }
 
 int main() {
-    // LDPC_5G *ldpc = new LDPC_5G(5200, 10000, 2);
+    SYSTEMTIME sys;
+    GetLocalTime( &sys );
+    printf( "%4d/%02d/%02d %02d:%02d:%02d.%03d \n",sys.wYear,sys.wMonth,sys.wDay,sys.wHour,sys.wMinute, sys.wSecond,sys.wMilliseconds);
+    LDPC_5G *ldpc = new LDPC_5G(5200, 10000, 2, 0, 2);
+    GetLocalTime( &sys );
+    printf( "%4d/%02d/%02d %02d:%02d:%02d.%03d \n",sys.wYear,sys.wMonth,sys.wDay,sys.wHour,sys.wMinute, sys.wSecond,sys.wMilliseconds);
+
+
+
     //cout << -1 % 20 << endl;
-    //system("pause");
+    system("pause");
     main1();
 
     return 0;

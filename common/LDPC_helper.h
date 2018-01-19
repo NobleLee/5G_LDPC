@@ -5,7 +5,9 @@
 #ifndef INC_5G_LDPC_LDPC_HELPER_H
 #define INC_5G_LDPC_LDPC_HELPER_H
 
-/**LDPC辅助操作函数**/
+/**
+ * LDPC辅助操作函数
+ */
 #include<vector>
 #include <string>
 

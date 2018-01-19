@@ -10,16 +10,23 @@
 
 using namespace std;
 
-class LDPC_5G : public LDPC {
-private:
+class LDPC_5G {
+public:
+    // 编码前长度
+    const unsigned long infLength;
+    // 编码之后输出长度
+    const unsigned long codeLength;
+    // 采用方案1 还是2
+    const int type;
     const string name = "R1-38.212";
+private:
+
     // CRC相关的
     int globalCRCType = 0;
     int globalCRCLength;
     int blockCRCType = 1;
     // 提案中固定为24
     int blockCRCLength;
-
     int zLength = 0;
     /// 分割码块的数目
     int blockNum;
@@ -45,7 +52,7 @@ private:
     /// 存储所有变量节点的校验关系，判断是否是一个码字时使用
     vector<vector<int>> checkH;
     /// 存放crc多项式数组
-    static vector<int *> crcList;
+    vector<int *> crcList;
     /// 临时空间
     int *CRCTemp;
     int *bitAddCRC;
@@ -55,9 +62,6 @@ private:
     vector<int *> rateMatchPosition;//速率匹配之后每个元素的位置
     vector<double *> deRateMatchLLR;//存放每个码块速率匹配之后的结果
     vector<double *> bpDecodeLLR; //存放译码信息的似然比
-
-
-
 private:
     void init();
 
@@ -73,26 +77,11 @@ private:
 
     bool isVaildCode(int *decodeLLRJudge, const int length, vector<vector<int>> &checkH);
 
-public:
-    LDPC_5G(unsigned long infLength, unsigned long codeLength, int type, int rvId, int modulationMod) : rvId(rvId), modulationMod(modulationMod), LDPC(infLength, codeLength, type) {
-        init();
-    };
-
-    int *encoder(int *in, int *out);
-
-    int decode(double *channelLLR, double *DECOutputLLR, double *infoBitLLR, const int decodeType, const int maxIter);
-
-    int decode(double *channelLLR, double *DECOutputLLR, const int decodeType, const int maxIter);
-
-    int BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDecodeLLR, const int decodeType, const int maxIter);
-
     void getCRC(int *infbit, const int infbitLength, const int crcType);
 
     bool checkCRC(int *in, const int length, const int crcType);
 
     void blockSegmentation(int *bitAddCRC, vector<int *> &blockBit);
-
-    void LDPC_Fast_Encode(vector<int *> &blockBit, vector<int *> &afterEncode);
 
     /**
      * 进行速率匹配
@@ -116,6 +105,21 @@ public:
      * @return
      */
     void getGenerateMatrix(int indexSet, int zlength);
+
+    int BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDecodeLLR, const int decodeType, const int maxIter);
+
+    void LDPC_Fast_Encode(vector<int *> &blockBit, vector<int *> &afterEncode);
+
+public:
+    LDPC_5G(unsigned long infLength, unsigned long codeLength, int type, int rvId, int modulationMod) : rvId(rvId), modulationMod(modulationMod), infLength(infLength), codeLength(codeLength), type(type) {
+        init();
+    };
+
+    int *encoder(int *in, int *out);
+
+    int decode(double *channelLLR, double *DECOutputLLR, double *infoBitLLR, const int decodeType, const int maxIter);
+
+    int decode(double *channelLLR, double *DECOutputLLR, const int decodeType, const int maxIter);
 
     ~LDPC_5G() {
         delete[] CRCTemp;
