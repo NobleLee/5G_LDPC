@@ -5,6 +5,7 @@
 #include<iostream>
 #include <LDPC_helper.h>
 #include <windows.h>
+
 using namespace std;
 
 int main1() {
@@ -26,13 +27,9 @@ int main1() {
 }
 
 int main() {
-    SYSTEMTIME sys;
-    GetLocalTime( &sys );
-    printf( "%4d/%02d/%02d %02d:%02d:%02d.%03d \n",sys.wYear,sys.wMonth,sys.wDay,sys.wHour,sys.wMinute, sys.wSecond,sys.wMilliseconds);
-    LDPC_5G *ldpc = new LDPC_5G(5200, 10000, 2, 0, 2);
-    GetLocalTime( &sys );
-    printf( "%4d/%02d/%02d %02d:%02d:%02d.%03d \n",sys.wYear,sys.wMonth,sys.wDay,sys.wHour,sys.wMinute, sys.wSecond,sys.wMilliseconds);
-
+    getTime();
+    LDPC_5G *ldpc = new LDPC_5G(2000, 30000, 2, 0, 2);
+    getTime();
 
 
     //cout << -1 % 20 << endl;

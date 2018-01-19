@@ -7,6 +7,7 @@
 
 #include "LDPC.h"
 #include <vector>
+#include "LDPC_helper.h"
 
 using namespace std;
 

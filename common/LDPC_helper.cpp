@@ -235,7 +235,12 @@ void Gaussian_Elimination(vector<vector<int>> &matrix) {
     }
 }
 
+void getTime(){
+    SYSTEMTIME sys;
+    GetLocalTime(&sys);
+    printf("%4d/%02d/%02d %02d:%02d:%02d.%03d \n", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds);
 
+}
 
 void coutmat(const vector<vector<int>> &matrix) {
     for (auto &i:matrix) {

@@ -340,10 +340,10 @@ void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
     getEdgeFrom_VNandCN(P_Mats, row * zLength, columns * zLength, edgeVNToVN);
     /// 提取码字的校验关系
     getParityMatrixPoint(P_Mats, row * zLength, columns * zLength, checkH);
-
+    getTime();
     /// 高斯消元，产生生成矩阵
     Gaussian_Elimination(P_Mats, row * zLength, columns * zLength);
-
+    getTime();
     /// 产生生成矩阵校验关系-编码使用
     getParityPoint(parityBit, P_Mats, row * zLength, columns * zLength);
 
