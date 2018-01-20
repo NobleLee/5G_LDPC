@@ -11,10 +11,10 @@
 using namespace std;
 
 /**
- * 将两个向量做模2加操作，结果放到v1中
- * @param v1 向量1
- * @param v2 向量2
- */
+* 将两个向量做模2加操作，结果放到v1中
+* @param v1 向量1
+* @param v2 向量2
+*/
 inline void vec_mod2sum(int *v1, int *v2, const int size) {
     for (int i = 0; i < size; i++) {
         if (v1[i] == v2[i]) v1[i] = 0;
@@ -42,11 +42,11 @@ void readMatrixFromFile(string &filename, vector<vector<int>> &parityMats) {
 }
 
 /**
- * 对矩阵进行高斯消元，矩阵右侧变换为单位阵
- * @param matrix
- * @param row
- * @param column
- */
+* 对矩阵进行高斯消元，矩阵右侧变换为单位阵
+* @param matrix
+* @param row
+* @param column
+*/
 void Gaussian_Elimination(int **matrix, const int row, const int column) {
 
     const unsigned long matrix_start = column - row;
@@ -76,11 +76,11 @@ void Gaussian_Elimination(int **matrix, const int row, const int column) {
 
 
 /**
- * 将字符串按照某一字符进行分割
- * @param s 要分割的字符串
- * @param v 保存分割结果的容器
- * @param c 分割字符
- */
+* 将字符串按照某一字符进行分割
+* @param s 要分割的字符串
+* @param v 保存分割结果的容器
+* @param c 分割字符
+*/
 void SplitString(const string &s, vector<string> &v, const string &c) {
     string::size_type pos1, pos2;
     pos2 = s.find(c);
@@ -96,13 +96,13 @@ void SplitString(const string &s, vector<string> &v, const string &c) {
 }
 
 /**
- * 获取变量节点与校验节点的关系，将结果存放在req中，结果的第j个元素，是通过校验节点与第j个变量节点连接的变量节点的索引
- * 用途:BP译码迭代用
- * @param P_mats 扩展之后的校验矩阵
- * @param row 校验矩阵的行数
- * @param column 校验矩阵的列数
- * @param req 存放结果
- */
+* 获取变量节点与校验节点的关系，将结果存放在req中，结果的第j个元素，是通过校验节点与第j个变量节点连接的变量节点的索引
+* 用途:BP译码迭代用
+* @param P_mats 扩展之后的校验矩阵
+* @param row 校验矩阵的行数
+* @param column 校验矩阵的列数
+* @param req 存放结果
+*/
 void getEdgeFrom_VNandCN(int **P_mats, const unsigned long row, const unsigned long column, vector<vector<vector<int>>> &req) {
     /// req 存放的数据结构解释：
     /// req的第i个元素为vector<vector<int>> 设为req_i，他的大小表示与这个变量节点相连接的校验节点的数目
@@ -125,12 +125,12 @@ void getEdgeFrom_VNandCN(int **P_mats, const unsigned long row, const unsigned l
 }
 
 /**
- * 按列提取校验矩阵中不为0的点的索引
- * @param P_mats 校验矩阵
- * @param row
- * @param column
- * @param req
- */
+* 按列提取校验矩阵中不为0的点的索引
+* @param P_mats 校验矩阵
+* @param row
+* @param column
+* @param req
+*/
 void getParityMatrixPoint(int **P_mats, const unsigned long row, const unsigned long column, vector<vector<int>> &req) {
     for (unsigned long i = 0; i < row; i++) {
         vector<int> tmp;
@@ -142,13 +142,13 @@ void getParityMatrixPoint(int **P_mats, const unsigned long row, const unsigned 
 }
 
 /**
- * 将H_base中的矩阵按照扩展因子扩展，结果存放在P_Mats
- * @param P_Mats 存放扩展结果
- * @param H_base 存放基础矩阵
- * @param row 基础矩阵的行
- * @param columns 基础矩阵的列
- * @param zLength 扩展因子
- */
+* 将H_base中的矩阵按照扩展因子扩展，结果存放在P_Mats
+* @param P_Mats 存放扩展结果
+* @param H_base 存放基础矩阵
+* @param row 基础矩阵的行
+* @param columns 基础矩阵的列
+* @param zLength 扩展因子
+*/
 void expendParityMatrix(int **P_Mats, int **H_base, const int row, const int columns, const int zLength) {
     int ly = 0;
     for (unsigned long i = 0; i < row; i++) {
@@ -164,12 +164,12 @@ void expendParityMatrix(int **P_Mats, int **H_base, const int row, const int col
 }
 
 /**
- * 提取生成校验bit的信息位的索引
- * @param res 索引存放容器
- * @param P_Mats 经过高斯消元的校验矩阵
- * @param row P_Mats的行数
- * @param columns P_Mats的列数
- */
+* 提取生成校验bit的信息位的索引
+* @param res 索引存放容器
+* @param P_Mats 经过高斯消元的校验矩阵
+* @param row P_Mats的行数
+* @param columns P_Mats的列数
+*/
 void getParityPoint(vector<vector<int>> &res, int **P_Mats, const int row, const int columns) {
     const int c_col = columns - row;
     for (int i = 0; i < row; i++) {
@@ -235,7 +235,7 @@ void Gaussian_Elimination(vector<vector<int>> &matrix) {
     }
 }
 
-void getTime(){
+void getTime() {
     SYSTEMTIME sys;
     GetLocalTime(&sys);
     printf("%4d/%02d/%02d %02d:%02d:%02d.%03d \n", sys.wYear, sys.wMonth, sys.wDay, sys.wHour, sys.wMinute, sys.wSecond, sys.wMilliseconds);
@@ -243,8 +243,8 @@ void getTime(){
 }
 
 void coutmat(const vector<vector<int>> &matrix) {
-    for (auto &i:matrix) {
-        for (auto &j:i) {
+    for (auto &i : matrix) {
+        for (auto &j : i) {
             std::cout << j << "\t";
         }
         std::cout << std::endl;

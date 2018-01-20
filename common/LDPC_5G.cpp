@@ -3,12 +3,11 @@
 //
 
 #include "LDPC_5G.h"
-#include "LDPC_helper.h"
 #include <unordered_map>
-#include <math.h>
-#include <windows.h>
+#include <cmath>
 #include <cstdarg>
 #include <cstring>
+#include <iostream>
 
 using namespace std;
 
@@ -84,12 +83,12 @@ unordered_map<int, int> *initZLsMap() {
 }
 
 /**
- * @tparam EncodeType
- * @param adress  需要填充fillThing的起始地址
- * @param count   填充fillThing的位置的数目
- * @param ...     填充fillThing的位置
- * @return
- */
+* @tparam EncodeType
+* @param adress  需要填充fillThing的起始地址
+* @param count   填充fillThing的位置的数目
+* @param ...     填充fillThing的位置
+* @return
+*/
 template<class EncodeType, class T>
 int fillAddress(EncodeType *addr, T fillThing, T sub, int count, ...) {
     va_list args;
@@ -103,9 +102,9 @@ int fillAddress(EncodeType *addr, T fillThing, T sub, int count, ...) {
 }
 
 /**
- * 初始化CRC多项式
- * @param crcList
- */
+* 初始化CRC多项式
+* @param crcList
+*/
 void generate_g(vector<int *> &crcList) {
     int *A_24 = new int[crcLengthList[0] + 1]();
     int *B_24 = new int[crcLengthList[1] + 1]();
@@ -130,8 +129,8 @@ void generate_g(vector<int *> &crcList) {
 }
 
 /**
- * 初始化速率匹配初始位置
- */
+* 初始化速率匹配初始位置
+*/
 void LDPC_5G::initStartPosition() {
     if (type == 1) {
         switch (rvId) {
@@ -198,18 +197,19 @@ void LDPC_5G::tempSpaceInit() {
     for (int i = 0; i < blockNum; i++) {
         deRateMatchLLR.push_back(new double[blockAfterEncodeLength]);
         bpDecodeLLR.push_back(new double[blockAfterEncodeLength]);
+        bpIterLLR.push_back(new double[blockAfterEncodeLength]);
     }
 
     decodeLLRJudge = new int[blockAfterEncodeLength];
 }
 
 /**
- * 根据码块长度和Kb来计算：扩展因子、基础矩阵的索引元素
- * @param Kb
- * @param K_ 码块长度
- * @param zLength 扩展因子,会在这个函数中初始化
- * @return 返回基础矩阵的索引
- */
+* 根据码块长度和Kb来计算：扩展因子、基础矩阵的索引元素
+* @param Kb
+* @param K_ 码块长度
+* @param zLength 扩展因子,会在这个函数中初始化
+* @return 返回基础矩阵的索引
+*/
 int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_, int &zLength) {
     unordered_map<int, int> *map = initZLsMap();
     int temp = ceil(K_ * 1.0 / Kb);
@@ -224,11 +224,11 @@ int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_, int &zLength) {
 }
 
 /**
- * CRC编码
- * @param infbit 输入bit（包含CRC要填充的bit）
- * @param infbitLength 有效信息长度
- * @param crcType 加CRC的类型
- */
+* CRC编码
+* @param infbit 输入bit（包含CRC要填充的bit）
+* @param infbitLength 有效信息长度
+* @param crcType 加CRC的类型
+*/
 void LDPC_5G::getCRC(int *infbit, const int infbitLength, const int crcType) {
     // 根据CRC的类型，取出CRC长度
     int g_length = crcLengthList[crcType];
@@ -250,12 +250,12 @@ void LDPC_5G::getCRC(int *infbit, const int infbitLength, const int crcType) {
 }
 
 /**
- * 进行CRC校验，返回校验结果
- * @param in 要校验的输入
- * @param length in指向地址长度
- * @param crcType crc校验的类型
- * @return CRC校验结果
- */
+* 进行CRC校验，返回校验结果
+* @param in 要校验的输入
+* @param length in指向地址长度
+* @param crcType crc校验的类型
+* @return CRC校验结果
+*/
 bool LDPC_5G::checkCRC(int *in, const int length, const int crcType) {
     int g_length = crcLengthList[crcType];
     int *g = crcList[crcType];
@@ -278,8 +278,8 @@ bool LDPC_5G::checkCRC(int *in, const int length, const int crcType) {
 }
 
 /**
- * 有关CRC校验的参数
- */
+* 有关CRC校验的参数
+*/
 void LDPC_5G::crcInit() {
     // 初始化总码块的CRC矩阵
     globalCRCLength = crcLengthList[globalCRCType];
@@ -290,10 +290,10 @@ void LDPC_5G::crcInit() {
 }
 
 /**
- * 获得第二种编码方式的Kb
- * @param infLengthCRC
- * @return Kb
- */
+* 获得第二种编码方式的Kb
+* @param infLengthCRC
+* @return Kb
+*/
 inline int getKbGraph2(const int infLengthCRC) {
     if (infLengthCRC > 640)
         return 10;
@@ -305,10 +305,10 @@ inline int getKbGraph2(const int infLengthCRC) {
 }
 
 /**
- * 初始化矩阵：包括编码要有的校验bit的位置，译码要用的校验关系
- * @param I_ls 选择校验矩阵的索引
- * @param zLength 扩展因子
- */
+* 初始化矩阵：包括编码要有的校验bit的位置，译码要用的校验关系
+* @param I_ls 选择校验矩阵的索引
+* @param zLength 扩展因子
+*/
 void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
     // 存放提案中所有的矩阵
     vector<vector<int>> parityMats;
@@ -356,8 +356,8 @@ void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
 }
 
 /**
- * 初始化速率匹配的索引，用于速率匹配和解速率匹配
- */
+* 初始化速率匹配的索引，用于速率匹配和解速率匹配
+*/
 void LDPC_5G::rateMatchPositionInit() {
     const int blockNullRight = blockLength - 2 * zLength;
     // 分配最长的空间
@@ -394,8 +394,8 @@ void LDPC_5G::rateMatchPositionInit() {
 }
 
 /**
- * 对bit进行码块分割，同时在每个码块后加入CRC
- */
+* 对bit进行码块分割，同时在每个码块后加入CRC
+*/
 void LDPC_5G::blockSegmentation(int *bitAddCRC, vector<int *> &blockBit) {
     for (int i = 0; i < blockNum; i++) {
         if (i == 0) {
@@ -413,10 +413,10 @@ void LDPC_5G::blockSegmentation(int *bitAddCRC, vector<int *> &blockBit) {
 }
 
 /**
- * 利用经过高斯消元的校验矩阵的校验关系进行编码
- * @param blockBit 待编码码块
- * @param afterEncode 编码之后的码块
- */
+* 利用经过高斯消元的校验矩阵的校验关系进行编码
+* @param blockBit 待编码码块
+* @param afterEncode 编码之后的码块
+*/
 void LDPC_5G::LDPC_Fast_Encode(vector<int *> &blockBit, vector<int *> &afterEncode) {
     int temp = 0, i = 0, j = 0, k = 0, l = 0;
     for (i = 0; i < blockNum; i++) {
@@ -433,16 +433,16 @@ void LDPC_5G::LDPC_Fast_Encode(vector<int *> &blockBit, vector<int *> &afterEnco
 
 
 /**
- * 进行解速率匹配
- * @param channelInput
- * @param deRateMatchLLR
- */
+* 进行解速率匹配
+* @param channelInput
+* @param deRateMatchLLR
+*/
 void LDPC_5G::deRateMatch(double *channelInput, vector<double *> &deRateMatchLLR) {
 
     int k = 0;
     double *rateMatchStartAdr = NULL;
     for (int i = 0; i < blockNum; i++) {
-        memset(deRateMatchLLR[0], 0, sizeof(double) * (blockCodeLength + 2 * zLength));
+        memset(deRateMatchLLR[i], 0, sizeof(double) * (blockCodeLength + 2 * zLength));
         rateMatchStartAdr = deRateMatchLLR[i] + 2 * zLength;
         for (int j = 0; j < rateMatchLength[i]; j++) {
             rateMatchStartAdr[rateMatchPosition[i][j]] += channelInput[k++];
@@ -451,8 +451,8 @@ void LDPC_5G::deRateMatch(double *channelInput, vector<double *> &deRateMatchLLR
 }
 
 /**
- * 初始化数据，包括码块数目，边的连接关系，生成和校验矩阵，扩展因子等
- */
+* 初始化数据，包括码块数目，边的连接关系，生成和校验矩阵，扩展因子等
+*/
 void LDPC_5G::init() {
     crcInit();
     int infLengthCRC = infLength + globalCRCLength;
@@ -502,12 +502,12 @@ int *LDPC_5G::encoder(int *in, int *out) {
 }
 
 /**
- * 经典BP译码的单次迭代
- * @param inputLLR 输入似然比
- * @param inputOutLength 输入输出的长度
- * @param outputLLR 输出地燃比
- * @param edgeVNToVN 节点的校验关系
- */
+* 经典BP译码的单次迭代
+* @param inputLLR 输入似然比
+* @param inputOutLength 输入输出的长度
+* @param outputLLR 输出地燃比
+* @param edgeVNToVN 节点的校验关系
+*/
 void singleBPDecode(double *inputLLR, const int inputOutLength, double *outputLLR, const vector<vector<vector<int>>> &edgeVNToVN) {
 
     if (inputOutLength != edgeVNToVN.size()) {
@@ -528,12 +528,12 @@ void singleBPDecode(double *inputLLR, const int inputOutLength, double *outputLL
 }
 
 /**
- * 简化的BP译码，MinSum算法
- * @param inputLLR
- * @param inputOutLength
- * @param outputLLR
- * @param edgeVNToVN
- */
+* 简化的BP译码，MinSum算法
+* @param inputLLR
+* @param inputOutLength
+* @param outputLLR
+* @param edgeVNToVN
+*/
 void singleMinSumDecode(double *inputLLR, const int inputOutLength, double *outputLLR, const vector<vector<vector<int>>> &edgeVNToVN) {
     int count = 0;//计算有多少个-1
     double min = 0;
@@ -561,15 +561,11 @@ void singleMinSumDecode(double *inputLLR, const int inputOutLength, double *outp
 
 
 bool LDPC_5G::isVaildCode(int *decodeLLRJudge, const int length, vector<vector<int>> &checkH) {
-    if (length != checkH.size()) {
-        cout << "[isVaildCode] size don't match error!!" << endl;
-        system("pause");
-        exit(1);
-    }
+
     int count = 0;
     for (int i = 0; i < length; i++) {
         count = 0;
-        for (int &index:checkH[i]) {
+        for (int &index : checkH[i]) {
             if (decodeLLRJudge[index] == 1) count++;
         }
         if (count % 2 == 1) return false;
@@ -578,13 +574,13 @@ bool LDPC_5G::isVaildCode(int *decodeLLRJudge, const int length, vector<vector<i
 }
 
 /**
- * BP译码迭代入口
- * @param deRateMatchLLR
- * @param bpDecodeLLR
- * @param decodeType
- * @param maxIter
- * @return average iter times
- */
+* BP译码迭代入口
+* @param deRateMatchLLR
+* @param bpDecodeLLR
+* @param decodeType
+* @param maxIter
+* @return average iter times
+*/
 int LDPC_5G::BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDecodeLLR, const int decodeType, const int maxIter) {
 
     ///choose the function address point according to decodetype
@@ -594,11 +590,17 @@ int LDPC_5G::BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDeco
     int iter = 0;  //compute mean iter times
 
     for (i = 0; i < blockNum; i++) {
-        for (j = 0; j < maxIter; i++) {
+        memcpy(bpDecodeLLR[i], deRateMatchLLR[i], blockAfterEncodeLength * sizeof(double));
+        for (j = 0; j < maxIter; j++) {
+            /// 将上次输出的结果放到输入
+            double *temp = bpDecodeLLR[i];
+            bpDecodeLLR[i] = bpIterLLR[i];
+            bpIterLLR[i] = temp;
             // complete one iteration
-            bp(deRateMatchLLR[i], blockAfterEncodeLength, bpDecodeLLR[i], edgeVNToVN);
+            bp(bpIterLLR[i], blockAfterEncodeLength, bpDecodeLLR[i], edgeVNToVN);
             // get inforBit and crc check
             for (k = 0; k < blockAfterEncodeLength; k++) {
+                bpDecodeLLR[i][k] += deRateMatchLLR[i][k];
                 decodeLLRJudge[k] = bpDecodeLLR[i][k] >= 0 ? 0 : 1;
             }
             // 校验CRC和是否是一个码字
@@ -611,14 +613,20 @@ int LDPC_5G::BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDeco
 }
 
 /**
- * @param channelLLR   信道似然比
- * @param DECOutputLLR 经过信道译码之后的似然比-去掉信道信息
- * @param infoBitLLR   信息bit似然比
- * @return 迭代次数
- */
+* @param channelLLR   信道似然比
+* @param DECOutputLLR 经过信道译码之后的似然比-去掉信道信息
+* @param infoBitLLR   信息bit似然比
+* @return 迭代次数
+*/
 int LDPC_5G::decode(double *channelLLR, double *DECOutputLLR, double *infoBitLLR, const int decodeType, const int maxIter) {
     deRateMatch(channelLLR, deRateMatchLLR);
     int iter = BP_AWGNC(deRateMatchLLR, bpDecodeLLR, decodeType, maxIter);
+
+    int index = 0;
+    for (int i = 0; i < blockNum; i++) {
+        memcpy(infoBitLLR + index, bpDecodeLLR[i], blockInfBitLength[i] - blockCRCLength);
+        index = blockInfBitLength[i];
+    }
 
     for (int i = 0; i < blockNum; i++) {
         for (int j = 0; j < blockAfterEncodeLength; j++) {
@@ -627,10 +635,7 @@ int LDPC_5G::decode(double *channelLLR, double *DECOutputLLR, double *infoBitLLR
     }
 
     RateMatch(bpDecodeLLR, DECOutputLLR, 2 * zLength);
-    int index = 0;
-    for (int i = 0; i < blockNum; i++) {
-        memcpy(infoBitLLR + index, bpDecodeLLR[i], blockInfBitLength[i] - blockCRCLength);
-    }
+
     return iter;
 }
 
@@ -648,3 +653,16 @@ int LDPC_5G::decode(double *channelLLR, double *DECOutputLLR, const int decodeTy
     return iter;
 }
 
+int LDPC_5G::decode(double *channelLLR, int *outBit, const int decodeType, const int maxIter) {
+    deRateMatch(channelLLR, deRateMatchLLR);
+    int iter = BP_AWGNC(deRateMatchLLR, bpDecodeLLR, decodeType, maxIter);
+
+
+    int index = 0;
+    for (int i = 0; i < blockNum; i++) {
+        for (int j = 0; j < blockInfBitLength[i] - blockCRCLength; j++)
+            outBit[index++] = bpDecodeLLR[i][j] >= 0 ? 0 : 1;
+
+    }
+    return iter;
+}

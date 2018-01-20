@@ -5,7 +5,7 @@
 #ifndef INC_5G_LDPC_LDPC_5G_H
 #define INC_5G_LDPC_LDPC_5G_H
 
-#include "LDPC.h"
+//#include "LDPC.h"
 #include <vector>
 #include "LDPC_helper.h"
 
@@ -20,6 +20,9 @@ public:
     // 采用方案1 还是2
     const int type;
     const string name = "R1-38.212";
+    /// 用于速率匹配选择的方式
+    const int rvId;
+    const int modulationMod;
 private:
 
     // CRC相关的
@@ -39,9 +42,6 @@ private:
     int blockAfterEncodeLength;
     /// 每个码块中有效的信息bit的长度，包含所有的crc
     vector<int> blockInfBitLength;
-    /// 用于速率匹配选择的方式
-    const int rvId;
-    const int modulationMod;
     /// 速率匹配开始的位置
     int startingPosition;
     /// 每个码块经过速率匹配之后的长度
@@ -63,6 +63,7 @@ private:
     vector<int *> rateMatchPosition;//速率匹配之后每个元素的位置
     vector<double *> deRateMatchLLR;//存放每个码块速率匹配之后的结果
     vector<double *> bpDecodeLLR; //存放译码信息的似然比
+    vector<double *> bpIterLLR; //存放译码信息的似然比
 private:
     void init();
 
@@ -85,10 +86,10 @@ private:
     void blockSegmentation(int *bitAddCRC, vector<int *> &blockBit);
 
     /**
-     * 进行速率匹配
-     * @param afterEncode 待速率匹配的bit
-     * @param afterRateMatch 速率匹配之后的bit
-     */
+    * 进行速率匹配
+    * @param afterEncode 待速率匹配的bit
+    * @param afterRateMatch 速率匹配之后的bit
+    */
     template<class T>
     void RateMatch(vector<T *> &afterEncode, T *out, int from) {
         int k = 0;
@@ -101,10 +102,10 @@ private:
     void deRateMatch(double *channelInput, vector<double *> &deRateMatchLLR);
 
     /**
-     * @param indexSet -i_ls
-     * @param zlength  -矩阵扩展因子
-     * @return
-     */
+    * @param indexSet -i_ls
+    * @param zlength  -矩阵扩展因子
+    * @return
+    */
     void getGenerateMatrix(int indexSet, int zlength);
 
     int BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDecodeLLR, const int decodeType, const int maxIter);
@@ -122,6 +123,8 @@ public:
 
     int decode(double *channelLLR, double *DECOutputLLR, const int decodeType, const int maxIter);
 
+    int decode(double *channelLLR, int *outBit, const int decodeType, const int maxIter);
+
     ~LDPC_5G() {
         delete[] CRCTemp;
         delete[] bitAddCRC;
@@ -131,6 +134,7 @@ public:
             delete[] rateMatchPosition[i];
             delete[] deRateMatchLLR[i];
             delete[]  bpDecodeLLR[i];
+            delete[] bpIterLLR[i];
         }
     }
 };
