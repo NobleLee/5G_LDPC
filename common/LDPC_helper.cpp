@@ -176,7 +176,7 @@ void getParityPoint(vector<vector<int>> &res, int **P_Mats, const int row, const
         vector<int> tmp;
         for (int j = 0; j < c_col; j++) {
             if (P_Mats[i][j] == 1)
-                tmp.push_back(c_col - j - 1);
+                tmp.push_back(j);
         }
         res.push_back(tmp);
     }

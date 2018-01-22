@@ -6,7 +6,7 @@
 #include "LDPC_helper.h"
 #include <windows.h>
 #include"Channel.h"
-
+#include"GF.h"
 using namespace std;
 
 int main1() {
@@ -29,12 +29,12 @@ int main1() {
 
 int main() {
     getTime();
-    int codelength = 30000;
-    int inflength = 5000;
+    int codelength = 2000;
+    int inflength = 700;
     int type = 2;
     int rv = 0;
     int mod = 2;
-    double dSNR = 20.0; // ϵͳSNR,ΪEs/N0
+    double dSNR = -1.0; // ϵͳSNR,ΪEs/N0
 
     double dLinearSNR = pow(10.0, dSNR / 10);
     double dStan;
@@ -60,21 +60,25 @@ int main() {
 
         ldpc->encoder(infbit, code);
 
-//        Modulation(code, mods, codelength, mod);
-//        Channel_Gaussian(codelength, mods, channelout, 0, dStan);
-//
-//        DeModulation(channelout, channelLLr, codelength, mod, dSNR);
-        for (int i = 0; i < codelength; i++) {
-            channelLLr[i] = code[i];
-        }
+        Modulation(code, mods, codelength, mod);
 
-        int iter = ldpc->decode(channelLLr, decodebit, 0, 50);
+        Channel_Gaussian(codelength, mods, channelout, 0, dStan);
 
-        errorNum = 0;
-        for (int i = 0; i < inflength; i++) {
-            if (infbit[i] != decodebit[i])
-                errorNum++;
+        DeModulation(mods, channelLLr, codelength, mod, dSNR);
+        /*for (int i = 0; i < codelength; i++) {
+        channelLLr[i] = code[i];
+        }*/
+
+        int iter = ldpc->decode(channelLLr, decodebit, 1, 50);
+        Diffs(decodebit, infbit, inflength, "decode 0");
+
+        /*errorNum = 0;
+        for (int i = inflength / 2+512; i < inflength; i++) {
+        if (infbit[i] != decodebit[i]) {
+        cout << i << "  ";
+        errorNum++;
         }
+        }*/
         cout << "iter " << count << "\terrorNum: " << errorNum << endl;
         count++;
     }

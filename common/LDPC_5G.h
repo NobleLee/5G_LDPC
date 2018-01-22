@@ -8,7 +8,6 @@
 //#include "LDPC.h"
 #include <vector>
 #include "LDPC_helper.h"
-
 using namespace std;
 
 class LDPC_5G {
@@ -59,7 +58,7 @@ private:
     int *bitAddCRC;
     int *decodeLLRJudge;
     vector<int *> blockBit; //存放码块分割之后的结果
-    vector<int *> afterEncode; //经过编码之后的信道
+    vector<int *> afterEncode; //经过编码之后的bit
     vector<int *> rateMatchPosition;//速率匹配之后每个元素的位置
     vector<double *> deRateMatchLLR;//存放每个码块速率匹配之后的结果
     vector<double *> bpDecodeLLR; //存放译码信息的似然比
