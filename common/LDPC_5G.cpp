@@ -400,21 +400,27 @@ void LDPC_5G::rateMatchPositionInit() {
 * 对bit进行码块分割，同时在每个码块后加入CRC
 */
 void LDPC_5G::blockSegmentation(int *bitAddCRC, vector<int *> &blockBit) {
-    int shift = 0;
-    for (int i = 0; i < blockNum; i++) {
-        if (i == 0) {
-            memcpy(blockBit[i], bitAddCRC, (blockInfBitLength[i] - blockCRCLength) * sizeof(int));
-            getCRC(blockBit[i], blockInfBitLength[i] - blockCRCLength, blockCRCType);
-            for (int j = blockInfBitLength[i]; j < blockLength; j++)
-                blockBit[i][j] = 0;
-            shift += blockInfBitLength[i] - blockCRCLength;
-        } else {
-            memcpy(blockBit[i], bitAddCRC + shift, (blockInfBitLength[i] - blockCRCLength) * sizeof(int));
-            getCRC(blockBit[i], blockInfBitLength[i] - blockCRCLength, blockCRCType);
-            for (int j = blockInfBitLength[i]; j < blockLength; j++)
-                blockBit[i][j] = 0;
-            shift += blockInfBitLength[i] - blockCRCLength;
+    if (blockNum > 1) {
+        int shift = 0;
+        for (int i = 0; i < blockNum; i++) {
+            if (i == 0) {
+                memcpy(blockBit[i], bitAddCRC, (blockInfBitLength[i] - blockCRCLength) * sizeof(int));
+                getCRC(blockBit[i], blockInfBitLength[i] - blockCRCLength, blockCRCType);
+                for (int j = blockInfBitLength[i]; j < blockLength; j++)
+                    blockBit[i][j] = 0;
+                shift += blockInfBitLength[i] - blockCRCLength;
+            } else {
+                memcpy(blockBit[i], bitAddCRC + shift, (blockInfBitLength[i] - blockCRCLength) * sizeof(int));
+                getCRC(blockBit[i], blockInfBitLength[i] - blockCRCLength, blockCRCType);
+                for (int j = blockInfBitLength[i]; j < blockLength; j++)
+                    blockBit[i][j] = 0;
+                shift += blockInfBitLength[i] - blockCRCLength;
+            }
         }
+    } else {
+        memcpy(blockBit[0], bitAddCRC, blockInfBitLength[0] * sizeof(int));
+        for (int j = blockInfBitLength[0]; j < blockLength; j++)
+            blockBit[0][j] = 0;
     }
 }
 
@@ -472,6 +478,8 @@ void LDPC_5G::init() {
         // 不进行码块分割时
         blockNum = 1;
         blockInfBitLength.push_back(infLengthCRC);
+        blockCRCType = globalCRCType;
+        blockCodeLength = globalCRCLength;
     } else {
         blockNum = ceil(infLengthCRC * 1.0 / (Kcb - blockCRCLength));
 
@@ -546,7 +554,7 @@ void singleBPDecode(double *inputLLR, const int inputOutLength, double *outputLL
 */
 void singleMinSumDecode(double *inputLLR, const int inputOutLength, double *outputLLR, const vector<vector<vector<int>>> &edgeVNToVN) {
     int count = 0;//计算有多少个-1
-    double min = 0;
+    double min = 99999;
     double temp = 0;
     if (inputOutLength != edgeVNToVN.size()) {
         cout << "BP matrix error!!" << endl;
@@ -558,27 +566,28 @@ void singleMinSumDecode(double *inputLLR, const int inputOutLength, double *outp
         outputLLR[i] = 0;
         for (int j = 0; j < edgeVNToVN[i].size(); j++) {
             count = 0;//计算有多少个-1
-            min = 0;//绝对值最小的数字
+            min = 9999999;//绝对值最小的数字
             for (int k = 0; k < edgeVNToVN[i][j].size(); k++) {
                 temp = inputLLR[edgeVNToVN[i][j][k]];
-                count += temp > 0 ? 0 : 1;
-                min = abs(temp) > min ? abs(temp) : min;
+                count += temp >= 0 ? 0 : 1;
+                min = abs(temp) > min ? min : abs(temp);
             }
-            outputLLR[i] = min * (count % 2 == 1 ? -1 : 1);
+            outputLLR[i] += min * (count % 2 == 1 ? -1 : 1);
         }
     }
 }
 
 
-bool LDPC_5G::isVaildCode(int *decodeLLRJudge, const int length, vector<vector<int>> &checkH) {
+bool LDPC_5G::isVaildCode(int *decodeLLRJudge, vector<vector<int>> &checkH) {
 
     int count = 0;
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; i < checkH.size(); i++) {
         count = 0;
         for (int &index : checkH[i]) {
             if (decodeLLRJudge[index] == 1) count++;
         }
-        if (count % 2 == 1) return false;
+        if (count % 2 == 1)
+            return false;
     }
     return true;
 }
@@ -614,11 +623,10 @@ int LDPC_5G::BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDeco
                 decodeLLRJudge[k] = bpDecodeLLR[i][k] >= 0 ? 0 : 1;
             }
             // 校验CRC和是否是一个码字
-            if (checkCRC(decodeLLRJudge, blockInfBitLength[i], blockCRCType) && isVaildCode(decodeLLRJudge, blockAfterEncodeLength, checkH))
+            if (checkCRC(decodeLLRJudge, blockInfBitLength[i], blockCRCType) && isVaildCode(decodeLLRJudge, checkH))
                 break;
         }
         iter += j;
-        cout << "block " << i << " iter " << j << "    ";
     }
     return ceil(iter * 1.0 / blockNum);
 }
@@ -682,7 +690,7 @@ int LDPC_5G::decode(double *channelLLR, int *outBit, const int decodeType, const
     int iter = BP_AWGNC(deRateMatchLLR, bpDecodeLLR, decodeType, maxIter);
     int index = 0;
     for (int i = 0; i < blockInfBitLength[0] - blockCRCLength; i++) {
-        outBit[index++] = deRateMatchLLR[0][i] >= 0 ? 0 : 1;
+        outBit[index++] = bpDecodeLLR[0][i] >= 0 ? 0 : 1;
     }
 
     /*int index = 0;
@@ -692,5 +700,5 @@ int LDPC_5G::decode(double *channelLLR, int *outBit, const int decodeType, const
     for (int i = 0; i < blockInfBitLength[0] - blockCRCLength-24; i++) {
     outBit[index++] = bpDecodeLLR[1][i] >= 0 ? 0 : 1;
     }*/
-    return 0;
+    return iter;
 }

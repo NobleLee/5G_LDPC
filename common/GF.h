@@ -19,6 +19,16 @@ void Diffs(T *a, U *b, int l, char *str) {
     std::cout << str << " errorNum: " << errorNum << std::endl;
 };
 
+//template <class T>
+//void coutmat(T* matrix,unsigned long row, unsigned long column) {
+//	for (unsigned long i = 0; i < row;i++) {
+//		for (unsigned long j = 0; j < column;j++) {
+//			std::cout << matrix[i][j] << ",";
+//		}
+//		std::cout << std::endl;
+//	}
+//	std::cout << std::endl;
+//}
 
 template<class T>
 void coutmat(T *matrix, unsigned long row, unsigned long column) {

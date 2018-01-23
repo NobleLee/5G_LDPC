@@ -76,7 +76,7 @@ private:
 
     void rateMatchPositionInit();
 
-    bool isVaildCode(int *decodeLLRJudge, const int length, vector<vector<int>> &checkH);
+    bool isVaildCode(int *decodeLLRJudge, vector<vector<int>> &checkH);
 
     void getCRC(int *infbit, const int infbitLength, const int crcType);
 

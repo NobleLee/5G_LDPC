@@ -29,12 +29,12 @@ int main1() {
 
 int main() {
     getTime();
-    int codelength = 2000;
+    int codelength = 4000;
     int inflength = 700;
     int type = 2;
     int rv = 0;
     int mod = 2;
-    double dSNR = -1.0; // ϵͳSNR,ΪEs/N0
+    double dSNR = 20.0; // ϵͳSNR,ΪEs/N0
 
     double dLinearSNR = pow(10.0, dSNR / 10);
     double dStan;
@@ -64,13 +64,13 @@ int main() {
 
         Channel_Gaussian(codelength, mods, channelout, 0, dStan);
 
-        DeModulation(mods, channelLLr, codelength, mod, dSNR);
+        DeModulation(channelout, channelLLr, codelength, mod, dSNR);
         /*for (int i = 0; i < codelength; i++) {
         channelLLr[i] = code[i];
         }*/
 
         int iter = ldpc->decode(channelLLr, decodebit, 1, 50);
-        Diffs(decodebit, infbit, inflength, "decode 0");
+
 
         /*errorNum = 0;
         for (int i = inflength / 2+512; i < inflength; i++) {
@@ -79,7 +79,8 @@ int main() {
         errorNum++;
         }
         }*/
-        cout << "iter " << count << "\terrorNum: " << errorNum << endl;
+        cout << "b " << count << "\titer: " << iter << "\t";
+        Diffs(decodebit, infbit, inflength, "decode 0");
         count++;
     }
     cout << "LDPC end:   ";
