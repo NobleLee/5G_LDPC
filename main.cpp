@@ -79,7 +79,7 @@ int main() {
         errorNum++;
         }
         }*/
-        cout << "b " << count << "\titer: " << iter << "\t";
+        cout << "b " << count << "\titer: " << iter << "\t\n";
         Diffs(decodebit, infbit, inflength, "decode 0");
         count++;
     }
