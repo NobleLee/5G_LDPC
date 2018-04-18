@@ -7,6 +7,7 @@
 #include <windows.h>
 #include"Channel.h"
 #include"GF.h"
+
 using namespace std;
 
 int main1() {
