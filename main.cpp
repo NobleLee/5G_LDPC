@@ -3,30 +3,11 @@
 //
 #include "LDPC_5G.h"
 #include<iostream>
-#include "LDPC_helper.h"
-#include <windows.h>
 #include"Channel.h"
 #include"GF.h"
 
 using namespace std;
 
-int main1() {
-    vector<int> v1 = {0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0};
-    vector<int> v2 = {0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0};
-    vector<int> v3 = {1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0};
-    vector<int> v4 = {0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0};
-    vector<int> v5 = {0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1};
-    vector<vector<int>> v{v1, v2, v3, v4, v5};
-    vector<vector<int>> res;
-    Gaussian_Elimination(v);
-    coutmat(v);
-    cout << endl;
-    getParityPoint(res, v);
-    coutmat(res);
-    cout << endl;
-    return 0;
-
-}
 
 int main() {
     getTime();
@@ -69,20 +50,18 @@ int main() {
         /*for (int i = 0; i < codelength; i++) {
         channelLLr[i] = code[i];
         }*/
-
         int iter = ldpc->decode(channelLLr, decodebit, 1, 50);
 
 
-        /*errorNum = 0;
-        for (int i = inflength / 2+512; i < inflength; i++) {
-        if (infbit[i] != decodebit[i]) {
-        cout << i << "  ";
-        errorNum++;
+        for (int i = 0; i < inflength; i++) {
+            if (infbit[i] != decodebit[i]) {
+                cout << i << "  ";
+                errorNum++;
+            }
         }
-        }*/
-        cout << "b " << count << "\titer: " << iter << "\t\n";
-        Diffs(decodebit, infbit, inflength, "decode 0");
-        count++;
+        cout << "block: " << count++ << "error: " << errorNum << "\titer: " << iter << "\t\n";
+        system("cls");
+
     }
     cout << "LDPC end:   ";
     getTime();

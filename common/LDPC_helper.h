@@ -75,4 +75,6 @@ void Gaussian_Elimination(vector<vector<int>> &matrix);
 
 void coutmat(const vector<vector<int>> &matrix);
 
+void lFileOut(int **mat, int row, int columns, string &t_strName);
+
 #endif //INC_5G_LDPC_LDPC_HELPER_H

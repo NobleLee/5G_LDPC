@@ -323,13 +323,21 @@ void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
         H_base[i] = new int[columns];
         memset(H_base[i], -1, columns * sizeof(int));
     }
+
     // 提取对应的校验矩阵
     int loc_x = 0, loc_y = 0;
     for (int i = 0; i < parityMats.size(); i++) {
         loc_x = parityMats[i][0];
         loc_y = parityMats[i][1];
-        H_base[loc_x][loc_y] = parityMats[i][I_ls + 2] % zLength;
+        H_base[loc_x][loc_y] = parityMats[i][I_ls + 2];
     }
+
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < columns; ++j) {
+            H_base[i][j] = H_base[i][j] % zLength;
+        }
+    }
+
     //产生校验矩阵
     int **P_Mats = new int *[row * zLength]; //校验矩阵
     for (int i = 0; i < row * zLength; i++) {
