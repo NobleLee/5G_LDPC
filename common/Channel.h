@@ -226,6 +226,14 @@ double MaxForModulation(double *distance, int n, unsigned long modulation) {
     return temp;
 }
 
+/**
+ * 输出似然比 log(p(x=0)/p(x=1))
+ * @param input
+ * @param output
+ * @param ulTransLength
+ * @param modulation
+ * @param dStan
+ */
 void DeModulation(double *input, double *output, unsigned long ulTransLength, unsigned long modulation, double dStan) {
     double sqr_dis[64];
     double max_sqr_dis1;

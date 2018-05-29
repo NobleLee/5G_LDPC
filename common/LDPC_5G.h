@@ -5,9 +5,11 @@
 #ifndef INC_5G_LDPC_LDPC_5G_H
 #define INC_5G_LDPC_LDPC_5G_H
 #define MAX_LLR 99999.9
+#define GAP 0.0000000000001
 //#include "LDPC.h"
 #include <vector>
 #include "LDPC_helper.h"
+
 using namespace std;
 
 class LDPC_5G {
@@ -118,7 +120,6 @@ private:
 
     void LDPC_Fast_Encode(vector<int *> &blockBit, vector<int *> &afterEncode);
 
-    void test(int *src, int iter);
 
 public:
     LDPC_5G(unsigned long infLength, unsigned long codeLength, int type, int rvId, int modulationMod) : rvId(rvId), modulationMod(modulationMod), infLength(infLength), codeLength(codeLength), type(type) {

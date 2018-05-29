@@ -276,5 +276,13 @@ void writeMatToText(int **uncoded_bits, const char *filename, unsigned long row,
         fprintf(fid, "%d\n", uncoded_bits[i][col - 1]);
     }
     fclose(fid);
+}
 
+void writeMatToText(double *uncoded_bits, const char *filename, unsigned long length) {
+    FILE *fid = fopen(filename, "a+");
+    for (int i = 0; i < length; i++) {
+        fprintf(fid, "%.4f ", uncoded_bits[i]);
+    }
+    fprintf(fid, "\n");
+    fclose(fid);
 }

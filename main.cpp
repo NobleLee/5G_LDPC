@@ -18,7 +18,7 @@ int main() {
     int type = 2;
     int rv = 3;
     int mod = 2;
-    double dSNR = 7.0; //
+    double dSNR = 6.0; //
 
     double dLinearSNR = pow(10.0, dSNR / 10);
     double dStan;
@@ -40,7 +40,7 @@ int main() {
     cout << "LDPC start: ";
     getTime();
 
-    const int limit_bit = 100;
+    const int limit_frame = 100;
     long total_Frame = 0;
     double dBER = 0;
     double dBLER = 0;
@@ -53,13 +53,15 @@ int main() {
         InforBitsGen(infbit, inflength);
         ldpc->encoder(infbit, code);
 
+
         Modulation(code, mods, codelength, mod);
 
         Channel_Gaussian(codelength, mods, channelout, 0, dStan);
 
         DeModulation(channelout, channelLLr, codelength, mod, dSNR);
 
-        int iter = ldpc->decode(channelLLr, decodeInfBit, 1, 50);
+
+        int iter = ldpc->decode(channelLLr, decodeInfBit, 0, 50);
 
         frameErrorBit = Diffs(decodeInfBit, infbit, inflength);
 
@@ -70,7 +72,7 @@ int main() {
 
         dBER = (double) errorBitNum * 1.0 / (total_Frame * inflength);
         dBLER = (double) errorFrameNum * 1.0 / total_Frame;
-
+        system("cls");
         cout << "Es/N0 = " << dSNR << "dB" << endl;
         cout << "Frame Number = " << total_Frame << "\titer = " << iter << endl;
         cout << "BLNumber = " << errorFrameNum << endl;
@@ -82,9 +84,9 @@ int main() {
         cout << "Mod type = QPSK   \texpend param = " << ldpc->zLength << endl;
         cout << "information bit number = " << inflength << "\tblock number = " << ldpc->blockNum << endl;
         cout << "code rate = " << ldpc->infLength * 1.0 / ldpc->codeLength << "\tencode block number = " << ldpc->codeLength << endl;
-        system("cls");
 
-        if (errorBitNum >= limit_bit) {
+
+        if (errorFrameNum >= limit_frame) {
             break;
         }
     }
