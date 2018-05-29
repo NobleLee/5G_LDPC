@@ -176,8 +176,8 @@ void LDPC_5G::initStartPosition() {
 }
 
 /**
- * 空间初始化函数
- */
+* 空间初始化函数
+*/
 void LDPC_5G::tempSpaceInit() {
     CRCTemp = new int[infLength + globalCRCLength];
     bitAddCRC = new int[infLength + globalCRCLength];
@@ -561,25 +561,35 @@ void singleBPDecode(const double *const inputLLR, const int inputOutLength, doub
         system("pause");
         exit(1);
     }
-
+    /*cout << "\ninput\n";
+    for (int i = 0; i < inputOutLength; i++) {
+        cout << inputLLR[i] << "  ";
+    }*/
     for (int i = 0; i < inputOutLength; i++) {
         outputLLR[i] = 0;
         for (int j = 0; j < edgeVNToVN[i].size(); j++) {
             double temp = 0;
             for (int k = 0; k < edgeVNToVN[i][j].size(); k++) {
+                double llr = inputLLR[edgeVNToVN[i][j][k]];
+                if (llr == 0)
+                    llr = GAP;
                 if (k == 0)
-                    temp = inputLLR[edgeVNToVN[i][j][k]];
+                    temp = llr;
                 else
-                    temp *= tanh(0.5 * inputLLR[edgeVNToVN[i][j][k]]);
+                    temp *= tanh(0.5 * llr);
             }
             if ((temp + 1 < GAP) && (temp + 1 >= 0))
-                outputLLR[i] = -1e3;
+                outputLLR[i] += -1e3;
             else if ((1 - temp < GAP) && (1 - temp >= 0))
-                outputLLR[i] = 1e3;
+                outputLLR[i] += 1e3;
             else
                 outputLLR[i] += log((1 + temp) / (1 - temp));
         }
     }
+    /*cout << "out\n";
+    for (int i = 0; i < inputOutLength; i++) {
+        cout << outputLLR[i] << "  ";
+    }*/
 }
 
 /**
@@ -615,10 +625,10 @@ void singleMinSumDecode(const double *const inputLLR, const int inputOutLength, 
 }
 
 /**
- * 利用bit之间的校验关系判断是否是一个码字
- * @param decodeLLRJudge
- * @return
- */
+* 利用bit之间的校验关系判断是否是一个码字
+* @param decodeLLRJudge
+* @return
+*/
 bool LDPC_5G::isVaildCode(int *decodeLLRJudge) {
 
     int count = 0;
@@ -661,8 +671,8 @@ int LDPC_5G::BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDeco
             bpDecodeLLR[i] = bpIterLLR[i];
             bpIterLLR[i] = temp;
             // complete one iteration
-            writeMatToText(bpIterLLR[i], "bpIterLLR.txt", blockAfterEncodeLength);
-
+            //writeMatToText(bpIterLLR[i], "bpIterLLR.txt", blockAfterEncodeLength);
+            //cout << "iter:" << iter << endl;
             bp(bpIterLLR[i], blockAfterEncodeLength, bpDecodeLLR[i], edgeVNToVN);
             // get inforBit and crc check
             for (k = 0; k < blockAfterEncodeLength; k++) {

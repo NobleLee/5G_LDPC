@@ -80,7 +80,6 @@ void writeToTxt(int *uncoded_bits, const char *filename, unsigned long length);
 
 /* 将矩阵写到txt文件中 */
 void writeMatToText(int **uncoded_bits, const char *filename, unsigned long row, unsigned long col);
-
 void writeMatToText(double *uncoded_bits, const char *filename, unsigned long length);
 
 #endif //INC_5G_LDPC_LDPC_HELPER_H
