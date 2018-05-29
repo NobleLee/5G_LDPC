@@ -1,7 +1,7 @@
 //
 // Created by ggl on 2018/1/14.
 //
-
+#define _CRT_SECURE_NO_WARNINGS
 #ifndef INC_5G_LDPC_LDPC_HELPER_H
 #define INC_5G_LDPC_LDPC_HELPER_H
 
@@ -11,7 +11,7 @@
 #include<vector>
 #include <string>
 #include <windows.h>
-
+#include <fstream>
 using std::vector;
 using std::string;
 
@@ -75,6 +75,10 @@ void Gaussian_Elimination(vector<vector<int>> &matrix);
 
 void coutmat(const vector<vector<int>> &matrix);
 
-void lFileOut(int **mat, int row, int columns, string &t_strName);
+/*写入txt文件，供matlab读取验证*/
+void writeToTxt(int *uncoded_bits, const char *filename, unsigned long length);
+
+/* 将矩阵写到txt文件中 */
+void writeMatToText(int **uncoded_bits, const char *filename, unsigned long row, unsigned long col);
 
 #endif //INC_5G_LDPC_LDPC_HELPER_H

@@ -4,7 +4,7 @@
 
 #ifndef INC_5G_LDPC_LDPC_5G_H
 #define INC_5G_LDPC_LDPC_5G_H
-
+#define MAX_LLR 99999.9
 //#include "LDPC.h"
 #include <vector>
 #include "LDPC_helper.h"
@@ -22,6 +22,11 @@ public:
     /// 用于速率匹配选择的方式
     const int rvId;
     const int modulationMod;
+
+    int zLength = 0;
+    /// 分割码块的数目
+    int blockNum;
+
 private:
 
     // CRC相关的
@@ -30,9 +35,7 @@ private:
     int blockCRCType = 1;
     // 提案中固定为24
     int blockCRCLength;
-    int zLength = 0;
-    /// 分割码块的数目
-    int blockNum;
+
     /// 编码前，每个码块的长度，后有填充0的元素
     int blockLength;
     /// 编码之后的码块长度
@@ -53,6 +56,8 @@ private:
     vector<vector<int>> checkH;
     /// 存放crc多项式数组
     vector<int *> crcList;
+    //  存放扩展校验矩阵
+    int **P_Mats;
     /// 临时空间
     int *CRCTemp;
     int *bitAddCRC;
@@ -78,6 +83,8 @@ private:
 
     bool isVaildCode(int *decodeLLRJudge, vector<vector<int>> &checkH);
 
+    bool isVaildCode(int *decodeLLRJudge);
+
     void getCRC(int *infbit, const int infbitLength, const int crcType);
 
     bool checkCRC(int *in, const int length, const int crcType);
@@ -90,7 +97,7 @@ private:
     * @param afterRateMatch 速率匹配之后的bit
     */
     template<class T>
-    void RateMatch(vector<T *> &afterEncode, T *out, int from) {
+    void RateMatch(vector<T *> &afterEncode, T *out, const int from) {
         int k = 0;
         for (int i = 0; i < blockNum; i++) {
             for (int j = 0; j < rateMatchLength[i]; j++)
@@ -110,6 +117,8 @@ private:
     int BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDecodeLLR, const int decodeType, const int maxIter);
 
     void LDPC_Fast_Encode(vector<int *> &blockBit, vector<int *> &afterEncode);
+
+    void test(int *src, int iter);
 
 public:
     LDPC_5G(unsigned long infLength, unsigned long codeLength, int type, int rvId, int modulationMod) : rvId(rvId), modulationMod(modulationMod), infLength(infLength), codeLength(codeLength), type(type) {
@@ -134,6 +143,9 @@ public:
             delete[] deRateMatchLLR[i];
             delete[]  bpDecodeLLR[i];
             delete[] bpIterLLR[i];
+        }
+        for (int i = 0; i < parityBit.size(); i++) {
+            free(P_Mats[i]);
         }
     }
 };

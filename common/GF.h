@@ -13,22 +13,29 @@ void Diffs(T *a, U *b, int l, char *str) {
     for (int i = 0; i < l; i++) {
         if (a[i] - b[i] != 0) {
             errorNum++;
+            //	std::cout << i << " ";
+        }
+    }
+    std::cout << str << " errorNum: " << errorNum << "\t";
+    for (int i = 0; i < l; i++) {
+        if (a[i] - b[i] != 0) {
             std::cout << i << " ";
         }
     }
-    std::cout << str << " errorNum: " << errorNum << std::endl;
+    cout << std::endl;
 };
 
-//template <class T>
-//void coutmat(T* matrix,unsigned long row, unsigned long column) {
-//	for (unsigned long i = 0; i < row;i++) {
-//		for (unsigned long j = 0; j < column;j++) {
-//			std::cout << matrix[i][j] << ",";
-//		}
-//		std::cout << std::endl;
-//	}
-//	std::cout << std::endl;
-//}
+template<class T, class U>
+int Diffs(T *a, U *b, int l) {
+    int errorNum = 0;
+    for (int i = 0; i < l; i++) {
+        if (a[i] - b[i] != 0) {
+            errorNum++;
+
+        }
+    }
+    return errorNum;
+};
 
 template<class T>
 void coutmat(T *matrix, unsigned long row, unsigned long column) {

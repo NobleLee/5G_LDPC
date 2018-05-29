@@ -5,7 +5,8 @@
 #ifndef INC_5G_LDPC_CHANNAL_H
 #define INC_5G_LDPC_CHANNAL_H
 
-
+#include <stdlib.h>
+#include<stdio.h>
 #include <math.h>
 
 const double _16QAM_real[16] = {0.3162, 0.3162, 0.9487, 0.9487, 0.3162, 0.3162, 0.9487, 0.9487, -0.3162, -0.3162, -0.9487, -0.9487, -0.3162, -0.3162, -0.9487, -0.9487};
@@ -36,9 +37,6 @@ const int _64QAM_demodulation_index[12][32] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11
                                                41, 42, 45, 46, 49, 50, 53, 54, 57, 58, 61, 62, 3, 4, 7, 8, 11, 12, 15, 16, 19, 20, 23, 24, 27, 28, 31, 32, 35, 36, 39, 40, 43, 44, 47, 48, 51, 52, 55, 56, 59, 60, 63, 64, 1, 3, 5, 7, 9,
                                                11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40,
                                                42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64};
-
-#include <stdlib.h>
-#include<stdio.h>
 
 double uniform(double a, double b, long int *seed) {
     double t;
@@ -79,8 +77,6 @@ void Modulation(int *input, double *output, unsigned long inputlength, unsigned 
                 index = input[2 * i] * 2 + input[2 * i + 1];
                 output[2 * i] = _QPSK_real[index];
                 output[2 * i + 1] = _QPSK_imag[index];
-                /*output[2 * i] = _QPSK_real[index];
-                output[2 * i + 1] = _QPSK_imag[index];*/
             }
             break;
 
@@ -89,8 +85,6 @@ void Modulation(int *input, double *output, unsigned long inputlength, unsigned 
                 index = input[4 * i] * 8 + input[4 * i + 1] * 4 + input[4 * i + 2] * 2 + input[4 * i + 3];
                 output[2 * i] = _16QAM_real[index];
                 output[2 * i + 1] = _16QAM_imag[index];
-                /*output[2 * i] = _16QAM_real[index];
-                output[2 * i + 1] = _16QAM_imag[index];*/
             }
             break;
 
@@ -100,8 +94,6 @@ void Modulation(int *input, double *output, unsigned long inputlength, unsigned 
                         input[6 * i + 3] * 4 + input[6 * i + 4] * 2 + input[6 * i + 5];
                 output[2 * i] = _64QAM_real[index];
                 output[2 * i + 1] = _64QAM_imag[index];
-                /*output[2 * i] = _64QAM_real[index];
-                output[2 * i + 1] = _64QAM_imag[index];*/
             }
             break;
 
@@ -161,32 +153,6 @@ void DeModulation1(double *input, double *output, unsigned long ulTransLength, u
                 output[(2 * i1 + 1)] = log(max_sqr_dis1) - log(max_sqr_dis2);
             }
             break;
-
-            //case _16QAM:
-            //	for(int i1 = 0;i1<inputlength;i1++)
-            //	{
-            //		for(int i2 = 0; i2<16; i2++)
-            //		{
-            //			sqr_dis[i2] = ((-1)/variance[i1])*( ( input.real[i1] - mean[i1]*_16QAM_real[i2] )*( input.real[i1] - mean[i1]*_16QAM_real[i2] )
-            //				+ ( input.imag[i1] - mean[i1]*_16QAM_imag[i2] )*( input.imag[i1] - mean[i1]*_16QAM_imag[i2] ) );
-            //		}
-            //		max_sqr_dis1 = MaxForModulation(sqr_dis,0,modulation);
-            //		max_sqr_dis2 = MaxForModulation(sqr_dis,1,modulation);
-            //		output[(4*i1)] = -max_sqr_dis1 + max_sqr_dis2;
-
-            //		max_sqr_dis1 = MaxForModulation(sqr_dis,2,modulation);
-            //		max_sqr_dis2 = MaxForModulation(sqr_dis,3,modulation);
-            //		output[(4*i1+1)] = -max_sqr_dis1 + max_sqr_dis2;
-
-            //		max_sqr_dis1 = MaxForModulation(sqr_dis,4,modulation);
-            //		max_sqr_dis2 = MaxForModulation(sqr_dis,5,modulation);
-            //		output[(4*i1+2)] = -max_sqr_dis1 + max_sqr_dis2;
-
-            //		max_sqr_dis1 = MaxForModulation(sqr_dis,6,modulation);
-            //		max_sqr_dis2 = MaxForModulation(sqr_dis,7,modulation);
-            //		output[(4*i1+3)] = -max_sqr_dis1 + max_sqr_dis2;
-            //	}
-            //	break;
 
         case 6:
             for (int i1 = 0; i1 < inputlength; i1++) {
@@ -284,31 +250,6 @@ void DeModulation(double *input, double *output, unsigned long ulTransLength, un
             }
             break;
 
-            //case _16QAM:
-            //	for(int i1 = 0;i1<inputlength;i1++)
-            //	{
-            //		for(int i2 = 0; i2<16; i2++)
-            //		{
-            //			sqr_dis[i2] = ((-1)/variance[i1])*( ( input.real[i1] - mean[i1]*_16QAM_real[i2] )*( input.real[i1] - mean[i1]*_16QAM_real[i2] )
-            //				+ ( input.imag[i1] - mean[i1]*_16QAM_imag[i2] )*( input.imag[i1] - mean[i1]*_16QAM_imag[i2] ) );
-            //		}
-            //		max_sqr_dis1 = MaxForModulation(sqr_dis,0,modulation);
-            //		max_sqr_dis2 = MaxForModulation(sqr_dis,1,modulation);
-            //		output[(4*i1)] = -max_sqr_dis1 + max_sqr_dis2;
-
-            //		max_sqr_dis1 = MaxForModulation(sqr_dis,2,modulation);
-            //		max_sqr_dis2 = MaxForModulation(sqr_dis,3,modulation);
-            //		output[(4*i1+1)] = -max_sqr_dis1 + max_sqr_dis2;
-
-            //		max_sqr_dis1 = MaxForModulation(sqr_dis,4,modulation);
-            //		max_sqr_dis2 = MaxForModulation(sqr_dis,5,modulation);
-            //		output[(4*i1+2)] = -max_sqr_dis1 + max_sqr_dis2;
-
-            //		max_sqr_dis1 = MaxForModulation(sqr_dis,6,modulation);
-            //		max_sqr_dis2 = MaxForModulation(sqr_dis,7,modulation);
-            //		output[(4*i1+3)] = -max_sqr_dis1 + max_sqr_dis2;
-            //	}
-            //	break;
 
         case 6:
             for (int i1 = 0; i1 < inputlength; i1++) {

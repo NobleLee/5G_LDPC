@@ -23,18 +23,18 @@ public:
 
 public:
     /**
-     * @param coder 需要编码的bit指针
-     * @param out   输出的编码bit的地址
-     * @return     返回要编码结果的指针
-     */
+    * @param coder 需要编码的bit指针
+    * @param out   输出的编码bit的地址
+    * @return     返回要编码结果的指针
+    */
     int *encoder(int *infbit, int *out);
 
     /**
-     * @param channelLLR   信道似然比
-     * @param DECOutputLLR 经过信道译码之后的似然比-去掉信道信息
-     * @param infoBitLLR   信息bit似然比
-     * @return 迭代次数
-     */
+    * @param channelLLR   信道似然比
+    * @param DECOutputLLR 经过信道译码之后的似然比-去掉信道信息
+    * @param infoBitLLR   信息bit似然比
+    * @return 迭代次数
+    */
     int decode(double *channelLLR, double *DECOutputLLR, double *infoBitLLR, const int decodeType, const int maxIter);
 
     int decode(double *channelLLR, double *DECOutputLLR, const int decodeType, const int maxIter);

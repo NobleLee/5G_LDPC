@@ -1,6 +1,7 @@
 //
 // Created by ggl on 2018/1/14.
 //
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <iostream>
 #include <cstdlib>
@@ -52,8 +53,10 @@ void Gaussian_Elimination(int **matrix, const int row, const int column) {
     const unsigned long matrix_start = column - row;
 
     for (unsigned long j = matrix_start, i = 0; j < column; j++, i++) {
+
         if (matrix[i][j] == 0) {
-            for (int i1 = i + 1; i1 < row; i1++) {
+            int temp = 0;
+            for (int i1 = i; i1 < row; i1++) {
                 if (matrix[i1][j] == 0) continue;
                 int *temp = matrix[i1];
                 matrix[i1] = matrix[i];
@@ -61,12 +64,12 @@ void Gaussian_Elimination(int **matrix, const int row, const int column) {
                 break;
             }
         }
+
         for (unsigned long k = 0; k < row; k++) {
             if (matrix[k][j] == 1 && k != i) {
                 vec_mod2sum(matrix[k], matrix[i], column);
             }
         }
-
     }
     // 校验结果，查看校验矩阵，是否满秩
     for (int i = 0; i < row; i++) {
@@ -75,7 +78,6 @@ void Gaussian_Elimination(int **matrix, const int row, const int column) {
             system("pause");
         }
     }
-
 }
 
 
@@ -139,11 +141,9 @@ void getParityMatrixPoint(int **P_mats, const unsigned long row, const unsigned 
     for (unsigned long i = 0; i < row; i++) {
         vector<int> tmp;
         for (int j = 0; j < column; j++) {
-            if (P_mats[i][j] == 1)
-                tmp.push_back(j);
+            if (P_mats[i][j] == 1) tmp.push_back(j);
         }
         req.push_back(tmp);
-        //  cout<<req.size()<<endl;
     }
 }
 
@@ -258,13 +258,23 @@ void coutmat(const vector<vector<int>> &matrix) {
     std::cout << std::endl;
 }
 
-void lFileOut(int **mat, int row, int columns, string &t_strName) {
-    ofstream fFile(t_strName);
-    for (unsigned long ulTemp = 0; ulTemp < row; ulTemp++) {
-        for (int j = 0; j < columns; j++)
-            fFile << mat[ulTemp][j] << " ";
-        fFile << endl;
+/*写入txt文件，供matlab读取验证*/
+void writeToTxt(int *uncoded_bits, const char *filename, unsigned long length) {
+    FILE *fid = fopen(filename, "w");
+    for (int i = 0; i < length; i++) {
+        fprintf(fid, "%d\n", uncoded_bits[i]);
     }
-    fFile.close();
-    fFile.clear();
+    fclose(fid);
+}
+
+void writeMatToText(int **uncoded_bits, const char *filename, unsigned long row, unsigned long col) {
+    FILE *fid = fopen(filename, "w");
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < col - 1; j++) {
+            fprintf(fid, "%d,", uncoded_bits[i][j]);
+        }
+        fprintf(fid, "%d\n", uncoded_bits[i][col - 1]);
+    }
+    fclose(fid);
+
 }
