@@ -570,13 +570,10 @@ void singleBPDecode(const double *const inputLLR, const int inputOutLength, doub
         for (int j = 0; j < edgeVNToVN[i].size(); j++) {
             double temp = 0;
             for (int k = 0; k < edgeVNToVN[i][j].size(); k++) {
-                double llr = inputLLR[edgeVNToVN[i][j][k]];
-                if (llr == 0)
-                    llr = GAP;
                 if (k == 0)
-                    temp = llr;
+                    temp = inputLLR[edgeVNToVN[i][j][k]];
                 else
-                    temp *= tanh(0.5 * llr);
+                    temp *= tanh(0.5 * inputLLR[edgeVNToVN[i][j][k]]);
             }
             if ((temp + 1 < GAP) && (temp + 1 >= 0))
                 outputLLR[i] += -1e3;
@@ -623,6 +620,39 @@ void singleMinSumDecode(const double *const inputLLR, const int inputOutLength, 
         }
     }
 }
+
+/**
+* 简化的BP译码，MinSum算法
+* @param inputLLR
+* @param inputOutLength
+* @param outputLLR
+* @param edgeVNToVN
+*/
+void AdjustedMinSumDecode(const double *const inputLLR, const int inputOutLength, double *outputLLR, const vector<vector<vector<int>>> &edgeVNToVN) {
+    int count = 0;//计算有多少个-1
+    double min;
+    double temp = 0;
+    if (inputOutLength != edgeVNToVN.size()) {
+        cout << "BP matrix error!!" << endl;
+        system("pause");
+        exit(1);
+    }
+
+    for (int i = 0; i < inputOutLength; i++) {
+        outputLLR[i] = 0;
+        for (int j = 0; j < edgeVNToVN[i].size(); j++) {
+            count = 0;//计算有多少个-1
+            min = MAX_LLR;//绝对值最小的数字
+            for (int k = 0; k < edgeVNToVN[i][j].size(); k++) {
+                temp = inputLLR[edgeVNToVN[i][j][k]];
+                count += temp >= 0 ? 0 : 1;
+                min = abs(temp) > min ? min : abs(temp);
+            }
+            outputLLR[i] += min * (count % 2 == 1 ? -1 : 1);
+        }
+    }
+}
+
 
 /**
 * 利用bit之间的校验关系判断是否是一个码字

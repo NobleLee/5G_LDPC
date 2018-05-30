@@ -59,7 +59,6 @@ int main() {
 
         DeModulation(channelout, channelLLr, codelength, mod, dSNR);
 
-
         int iter = ldpc->decode(channelLLr, decodeInfBit, 0, 50);
 
         frameErrorBit = Diffs(decodeInfBit, infbit, inflength);
