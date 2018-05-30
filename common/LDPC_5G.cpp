@@ -561,10 +561,12 @@ void singleBPDecode(const double *const inputLLR, const int inputOutLength, doub
         system("pause");
         exit(1);
     }
-    /*cout << "\ninput\n";
+
+    cout << "\ninput\n";
     for (int i = 0; i < inputOutLength; i++) {
         cout << inputLLR[i] << "  ";
-    }*/
+    }
+
     for (int i = 0; i < inputOutLength; i++) {
         outputLLR[i] = 0;
         for (int j = 0; j < edgeVNToVN[i].size(); j++) {
@@ -583,10 +585,12 @@ void singleBPDecode(const double *const inputLLR, const int inputOutLength, doub
                 outputLLR[i] += log((1 + temp) / (1 - temp));
         }
     }
-    /*cout << "out\n";
+
+    cout << "\nout\n";
     for (int i = 0; i < inputOutLength; i++) {
         cout << outputLLR[i] << "  ";
-    }*/
+    }
+
 }
 
 /**
