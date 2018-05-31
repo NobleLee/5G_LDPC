@@ -17,7 +17,7 @@ int main() {
     int type = 2;
     int rv = 3;
     int mod = 2;
-    double dSNR = 6.0; //
+    double dSNR = 10.0; //
 
     double dLinearSNR = pow(10.0, dSNR / 10);
     double dStan;
@@ -28,7 +28,6 @@ int main() {
     }
 
     LDPC_5G *ldpc = new LDPC_5G(inflength, codelength, type, rv, mod);
-
 
     int *infbit = new int[inflength];
     int *code = new int[codelength];
@@ -50,16 +49,17 @@ int main() {
         total_Frame++;
 
         InforBitsGen(infbit, inflength);
-        ldpc->encoder(infbit, code);
 
+        ldpc->encoder(infbit, code);
 
         Modulation(code, mods, codelength, mod);
 
         Channel_Gaussian(codelength, mods, channelout, 0, dStan);
 
-        DeModulation(channelout, channelLLr, codelength, mod, dSNR);
+        DeModulation(channelout, channelLLr, codelength, mod, dStan);
 
-        int iter = ldpc->decode(channelLLr, decodeInfBit, 0, 50);
+
+        int iter = ldpc->decode(channelLLr, decodeInfBit, 1, 50);
 
         frameErrorBit = Diffs(decodeInfBit, infbit, inflength);
 
@@ -82,7 +82,6 @@ int main() {
         cout << "Mod type = QPSK   \texpend param = " << ldpc->zLength << endl;
         cout << "information bit number = " << inflength << "\tblock number = " << ldpc->blockNum << endl;
         cout << "code rate = " << ldpc->infLength * 1.0 / ldpc->codeLength << "\tencode block number = " << ldpc->codeLength << endl;
-
 
         if (errorFrameNum >= limit_frame) {
             break;

@@ -484,7 +484,6 @@ void LDPC_5G::deRateMatch(double *channelInput, vector<double *> &deRateMatchLLR
         memset(deRateMatchLLR[i], 0, sizeof(double) * blockAfterEncodeLength);
         rateMatchStartAdr = deRateMatchLLR[i] + 2 * zLength;
         for (int j = 0; j < rateMatchLength[i]; j++) {
-            //rateMatchStartAdr[rateMatchPosition[i][j]] += channelInput[k++];
             rateMatchStartAdr[rateMatchPosition[i][j]] += channelInput[k++];
         }
 
@@ -554,43 +553,43 @@ int *LDPC_5G::encoder(int *in, int *out) {
 * @param outputLLR 输出似然比
 * @param edgeVNToVN 节点的校验关系
 */
-void singleBPDecode(const double *const inputLLR, const int inputOutLength, double *outputLLR, const vector<vector<vector<int>>> &edgeVNToVN) {
+void singleBPDecode(const double *const inputLLR, const int inputOutLength, double *outputLLR,
+                    const vector<vector<vector<int>>> &edgeVNToVN) {
 
     if (inputOutLength != edgeVNToVN.size()) {
         cout << "BP matrix error!!" << endl;
         system("pause");
         exit(1);
     }
-
-    cout << "\ninput\n";
-    for (int i = 0; i < inputOutLength; i++) {
-        cout << inputLLR[i] << "  ";
-    }
-
+    //cout << "in llr:\n\n";
+    //for (int i = 0; i < inputOutLength; i++) {
+    //	cout << inputLLR[i] << " ";
+    //}
+    //cout << "\n\n";
     for (int i = 0; i < inputOutLength; i++) {
         outputLLR[i] = 0;
         for (int j = 0; j < edgeVNToVN[i].size(); j++) {
             double temp = 0;
             for (int k = 0; k < edgeVNToVN[i][j].size(); k++) {
                 if (k == 0)
-                    temp = inputLLR[edgeVNToVN[i][j][k]];
+                    temp = tanh(0.5 * inputLLR[edgeVNToVN[i][j][k]]);
                 else
                     temp *= tanh(0.5 * inputLLR[edgeVNToVN[i][j][k]]);
             }
             if ((temp + 1 < GAP) && (temp + 1 >= 0))
-                outputLLR[i] += -1e3;
+                outputLLR[i] += -1e7;
             else if ((1 - temp < GAP) && (1 - temp >= 0))
-                outputLLR[i] += 1e3;
+                outputLLR[i] += 1e7;
             else
                 outputLLR[i] += log((1 + temp) / (1 - temp));
         }
     }
-
-    cout << "\nout\n";
+    /*cout << "out llr:\n\n";
     for (int i = 0; i < inputOutLength; i++) {
-        cout << outputLLR[i] << "  ";
+        cout << outputLLR[i] << " ";
     }
-
+    cout << "\n\n";*/
+    //writeMatToText(outputLLR, "F:/project/ClionProject/5G_LDPC/common/bpout.txt", inputOutLength);
 }
 
 /**
@@ -624,39 +623,6 @@ void singleMinSumDecode(const double *const inputLLR, const int inputOutLength, 
         }
     }
 }
-
-/**
-* 简化的BP译码，MinSum算法
-* @param inputLLR
-* @param inputOutLength
-* @param outputLLR
-* @param edgeVNToVN
-*/
-void AdjustedMinSumDecode(const double *const inputLLR, const int inputOutLength, double *outputLLR, const vector<vector<vector<int>>> &edgeVNToVN) {
-    int count = 0;//计算有多少个-1
-    double min;
-    double temp = 0;
-    if (inputOutLength != edgeVNToVN.size()) {
-        cout << "BP matrix error!!" << endl;
-        system("pause");
-        exit(1);
-    }
-
-    for (int i = 0; i < inputOutLength; i++) {
-        outputLLR[i] = 0;
-        for (int j = 0; j < edgeVNToVN[i].size(); j++) {
-            count = 0;//计算有多少个-1
-            min = MAX_LLR;//绝对值最小的数字
-            for (int k = 0; k < edgeVNToVN[i][j].size(); k++) {
-                temp = inputLLR[edgeVNToVN[i][j][k]];
-                count += temp >= 0 ? 0 : 1;
-                min = abs(temp) > min ? min : abs(temp);
-            }
-            outputLLR[i] += min * (count % 2 == 1 ? -1 : 1);
-        }
-    }
-}
-
 
 /**
 * 利用bit之间的校验关系判断是否是一个码字
@@ -705,7 +671,7 @@ int LDPC_5G::BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDeco
             bpDecodeLLR[i] = bpIterLLR[i];
             bpIterLLR[i] = temp;
             // complete one iteration
-            //writeMatToText(bpIterLLR[i], "bpIterLLR.txt", blockAfterEncodeLength);
+            //writeMatToText(bpIterLLR[i], "F:/project/ClionProject/5G_LDPC/common/bpIterLLR.txt", blockAfterEncodeLength);
             //cout << "iter:" << iter << endl;
             bp(bpIterLLR[i], blockAfterEncodeLength, bpDecodeLLR[i], edgeVNToVN);
             // get inforBit and crc check
