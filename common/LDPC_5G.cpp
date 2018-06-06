@@ -215,7 +215,7 @@ void LDPC_5G::tempSpaceInit() {
     ulpCheDis = new long[columns * row * zLength];
 }
 
-/***
+/**
  * 根据LDPC码的矩阵，得到其按行顺序和列顺序排列的1的位置
  * @param t_bypMatrix   LDPC码矩阵(该矩阵储存方式如MATLAB，按列读取)
  * @param t_ulRow 矩阵的行数
@@ -593,11 +593,7 @@ void singleBPDecode(const double *const inputLLR, const int inputOutLength, doub
         system("pause");
         exit(1);
     }
-    //cout << "in llr:\n\n";
-    //for (int i = 0; i < inputOutLength; i++) {
-    //	cout << inputLLR[i] << " ";
-    //}
-    //cout << "\n\n";
+
     for (int i = 0; i < inputOutLength; i++) {
         outputLLR[i] = 0;
         for (int j = 0; j < edgeVNToVN[i].size(); j++) {
@@ -616,12 +612,6 @@ void singleBPDecode(const double *const inputLLR, const int inputOutLength, doub
                 outputLLR[i] += log((1 + temp) / (1 - temp));
         }
     }
-    /*cout << "out llr:\n\n";
-    for (int i = 0; i < inputOutLength; i++) {
-        cout << outputLLR[i] << " ";
-    }
-    cout << "\n\n";*/
-    //writeMatToText(outputLLR, "F:/project/ClionProject/5G_LDPC/common/bpout.txt", inputOutLength);
 }
 
 /**
@@ -702,9 +692,6 @@ int LDPC_5G::BP_AWGNC(vector<double *> &deRateMatchLLR, vector<double *> &bpDeco
             double *temp = bpDecodeLLR[i];
             bpDecodeLLR[i] = bpIterLLR[i];
             bpIterLLR[i] = temp;
-            // complete one iteration
-            //writeMatToText(bpIterLLR[i], "F:/project/ClionProject/5G_LDPC/common/bpIterLLR.txt", blockAfterEncodeLength);
-            //cout << "iter:" << iter << endl;
             bp(bpIterLLR[i], blockAfterEncodeLength, bpDecodeLLR[i], edgeVNToVN);
             // get inforBit and crc check
             for (k = 0; k < blockAfterEncodeLength; k++) {
@@ -768,16 +755,11 @@ int LDPC_5G::decode(double *channelLLR, int *outBit, const int decodeType, const
 
     double *dpDecoding = new double[blockCodeLength + 2 * zLength];
     double *dpDECOutputLLR = new double[blockCodeLength + 2 * zLength];
-
+    int iter = 0;
     for (int i = 0; i < blockNum; i++) {
-        Decoder_AWGN(ulpVarDis, ulpCheDis, deRateMatchLLR[i], dpDecoding, dpDECOutputLLR, blockCodeLength + 2 * zLength, blockCodeLength - blockLength, wVarDeg, wCheDeg, ulIterMax, bypInforbits, ulpReArrangeCol);
-    }
-    int index = 0;
-    for (int i = 0; i < blockNum; i++) {
-        for (int j = 0; j < blockInfBitLength[i] - blockCRCLength; j++) {
-            outBit[index++] = bpDecodeLLR[i][j] >= 0 ? 0 : 1;
-        }
+        iter += Decoder_AWGN(ulpVarDis, ulpCheDis, deRateMatchLLR[i], dpDecoding, dpDECOutputLLR, blockCodeLength + 2 * zLength, blockCodeLength - blockLength, row, columns, maxIter, outBit, ulpReArrangeCol);
     }
 
-    return iter;
+
+    return iter / blockNum;
 }

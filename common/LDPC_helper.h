@@ -100,9 +100,8 @@ bool SAM_LDPC_Fast_Encoder(int *t_bypInforbits, int *t_bypCodeWords, unsigned sh
  * @param ulpReArrangeCol
  * @return 满足所有校验方程返回1，否则返回0
  */
-bool Decoder_AWGN(long *t_lpVarDis, long *t_lpCheDis, double *t_dpChannelOut, double *t_dpDecoding, double *t_dpLLR, unsigned long t_ulCodeLength,
-                  unsigned long t_ulCheLength, unsigned short t_byVarDeg, unsigned short t_byCheDeg, unsigned long t_ulIterMax, unsigned short *bypInforbits,
-                  unsigned long *ulpReArrangeCol);
+int Decoder_AWGN(long *t_lpVarDis, long *t_lpCheDis, double *t_dpChannelOut, double *t_dpDecoding, double *t_dpLLR, unsigned long t_ulCodeLength,
+                 unsigned long t_ulCheLength, unsigned short t_byVarDeg, unsigned short t_byCheDeg, unsigned long t_ulIterMax, int *bypInforbits, unsigned long *ulpReArrangeCol);
 
 /**
 * 提取生成校验bit的信息位的索引

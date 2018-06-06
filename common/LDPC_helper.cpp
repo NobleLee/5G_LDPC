@@ -310,7 +310,7 @@ bool SAM_LDPC_Fast_Encoder(int *t_bypInforbits, int *t_bypCodeWords, unsigned sh
     return 1;
 }
 
-bool ExtractInforBits(double *t_bypCodeWords, unsigned long *ulpReArrangeCol, unsigned short *t_bypInforbits, unsigned long t_ulCodeLength, unsigned long t_ulCheLength) {
+bool ExtractInforBits(double *t_bypCodeWords, unsigned long *ulpReArrangeCol, int *t_bypInforbits, unsigned long t_ulCodeLength, unsigned long t_ulCheLength) {
     unsigned long ulMiddle;
     for (long ulTemp1 = 0; ulTemp1 < t_ulCheLength; ulTemp1++) {
         if (ulpReArrangeCol[ulTemp1] != 0) {
@@ -343,8 +343,8 @@ bool ExtractInforBits(double *t_bypCodeWords, unsigned long *ulpReArrangeCol, un
  * @param ulpReArrangeCol
  * @return 满足所有校验方程返回1，否则返回0
  */
-bool Decoder_AWGN(long *t_lpVarDis, long *t_lpCheDis, double *t_dpChannelOut, double *t_dpDecoding, double *t_dpLLR, unsigned long t_ulCodeLength,
-                  unsigned long t_ulCheLength, unsigned short t_byVarDeg, unsigned short t_byCheDeg, unsigned long t_ulIterMax, unsigned short *bypInforbits, unsigned long *ulpReArrangeCol) {
+int Decoder_AWGN(long *t_lpVarDis, long *t_lpCheDis, double *t_dpChannelOut, double *t_dpDecoding, double *t_dpLLR, unsigned long t_ulCodeLength,
+                 unsigned long t_ulCheLength, unsigned short t_byVarDeg, unsigned short t_byCheDeg, unsigned long t_ulIterMax, int *bypInforbits, unsigned long *ulpReArrangeCol) {
 
     unsigned short wVarDeg, wCheDeg;
     unsigned long ulCount, ulNum;
@@ -513,11 +513,7 @@ bool Decoder_AWGN(long *t_lpVarDis, long *t_lpCheDis, double *t_dpChannelOut, do
     free(dpSumBackward);
     free(dpMiddle);
 
-    if (ulNum == 0) {
-        return 1;
-    } else {
-        return 0;
-    }
+    return ulCount;
 }
 
 
