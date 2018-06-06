@@ -207,13 +207,67 @@ void LDPC_5G::tempSpaceInit() {
 
     decodeLLRJudge = new int[blockAfterEncodeLength];
 
-    const int row = type == 1 ? 46 : 42;
-    const int columns = type == 1 ? 68 : 52;
-    P_Mats = new int *[row * zLength]; //校验矩阵
-    for (int i = 0; i < row * zLength; i++) {
-        P_Mats[i] = new int[columns * zLength]();
-    }
+
+    P_Matrix = new unsigned short[row * columns * zLength * zLength];
+    ulpReArrangeCol = new unsigned long[columns * zLength]();
+
+    ulpVarDis = new long[row * columns * zLength];
+    ulpCheDis = new long[columns * row * zLength];
 }
+
+/***
+ * 根据LDPC码的矩阵，得到其按行顺序和列顺序排列的1的位置
+ * @param t_bypMatrix   LDPC码矩阵(该矩阵储存方式如MATLAB，按列读取)
+ * @param t_ulRow 矩阵的行数
+ * @param t_ulCol 矩阵的列数
+ * @param t_VarDeg 矩阵的变量节点度
+ * @param t_CheDeg  矩阵的校验节点度
+ * @return
+ */
+bool LDPC_5G::SAM_Position_Decetion(unsigned short *t_bypMatrix, unsigned long t_ulRow, unsigned long t_ulCol, unsigned short t_VarDeg, unsigned short t_CheDeg) {
+    unsigned long ulTemp1, ulTemp2, ulTemp3;
+
+    for (ulTemp1 = 0; ulTemp1 < t_VarDeg * t_ulCol; ulTemp1++) {
+        ulpVarDis[ulTemp1] = -1;
+    }
+    for (ulTemp1 = 0; ulTemp1 < t_CheDeg * t_ulRow; ulTemp1++) {
+        ulpCheDis[ulTemp1] = -1;
+    }
+
+    //  按列查找到所有1的位置
+    for (ulTemp1 = 0; ulTemp1 < t_ulCol; ulTemp1++) {
+        ulTemp3 = 0;
+        for (ulTemp2 = 0; ulTemp2 < t_ulRow; ulTemp2++) {
+            if (t_bypMatrix[ulTemp1 * t_ulRow + ulTemp2] == 1) {
+                if (ulTemp3 < t_VarDeg) {
+                    ulpVarDis[ulTemp1 * t_VarDeg + ulTemp3] = ulTemp2;
+                    ulTemp3++;
+                } else {
+                    return 0;
+                }
+
+            }
+        }
+    }
+
+    //  按行查到所有1的位置
+    for (ulTemp1 = 0; ulTemp1 < t_ulRow; ulTemp1++) {
+        ulTemp3 = 0;
+        for (ulTemp2 = 0; ulTemp2 < t_ulCol; ulTemp2++) {
+            if (t_bypMatrix[ulTemp1 + ulTemp2 * t_ulRow] == 1) {
+                if (ulTemp3 < t_CheDeg) {
+                    ulpCheDis[ulTemp1 * t_CheDeg + ulTemp3] = ulTemp2;
+                    ulTemp3++;
+                } else {
+                    return 0;
+                }
+
+            }
+        }
+    }
+    return 1;
+}
+
 
 /**
 * 根据码块长度和Kb来计算：扩展因子、基础矩阵的索引元素
@@ -242,7 +296,6 @@ int LDPC_5G::getZlengthAndI_ls(const int Kb, const int K_, int &zLength) {
 * @param crcType 加CRC的类型
 */
 void LDPC_5G::getCRC(int *infbit, const int infbitLength, const int crcType) {
-
 
     // 根据CRC的类型，取出CRC长度
     int g_length = crcLengthList[crcType];
@@ -339,50 +392,32 @@ void LDPC_5G::getGenerateMatrix(const int I_ls, const int zLength) {
     string filename = type == 1 ? "LDPC_P1_38.212.txt" : "LDPC_P2_38.212.txt";
     readMatrixFromFile(filename, parityMats);
 
-    const int row = type == 1 ? 46 : 42;
-    const int columns = type == 1 ? 68 : 52;
+    unsigned long ulCheLength = row * zLength;
+    unsigned long ulCodeLength = columns * zLength;
 
-    int **H_base = new int *[row]();
-    for (int i = 0; i < row; i++) {
-        H_base[i] = new int[columns];
-        memset(H_base[i], -1, columns * sizeof(int));
-    }
+    long *BaseMatrix = new long[row * columns]();
+    memset(BaseMatrix, -1, sizeof(long) * row * columns);
     // 提取对应的校验矩阵
     int loc_x = 0, loc_y = 0;
     for (int i = 0; i < parityMats.size(); i++) {
         loc_x = parityMats[i][0];
         loc_y = parityMats[i][1];
-        H_base[loc_x][loc_y] = parityMats[i][I_ls + 2];// % zLength;
+        BaseMatrix[loc_x * columns + loc_y] = parityMats[i][I_ls + 2] % zLength;
     }
-
-    // writeMatToText(H_base, "C:/Users/39546/Desktop/mat.txt", row, columns);
-    expendParityMatrix(P_Mats, H_base, row, columns, zLength);
+    unsigned short *LDPC_Matrix = new unsigned short[row * zLength * columns * zLength]();
+    /// 对矩阵进行扩展
+    SAM_expendParityMatrix(LDPC_Matrix, BaseMatrix, row, columns, zLength);
     /// 提取边连接关系-译码使用
-    getEdgeFrom_VNandCN(P_Mats, row * zLength, columns * zLength, edgeVNToVN);
-    /// 提取码字的校验关系,验证一个向量是否是一个码字使用
-    getParityMatrixPoint(P_Mats, row * zLength, columns * zLength, checkH);
+    SAM_Position_Decetion(LDPC_Matrix, ulCheLength, ulCodeLength, row, columns);
     cout << "before Gaussian Elimination: ";
     getTime();
-    //产生校验矩阵
-    int **P_Mats_GM = new int *[row * zLength]; //校验矩阵
-    for (int i = 0; i < row * zLength; i++) {
-        P_Mats_GM[i] = new int[columns * zLength]();
-        memcpy(P_Mats_GM[i], P_Mats[i], sizeof(int) * columns * zLength);
-    }
-    /// 高斯消元，产生生成矩阵
-    Gaussian_Elimination(P_Mats_GM, row * zLength, columns * zLength);
+    /// 高斯消元
+    SAM_Gaussian_Elimination(LDPC_Matrix, P_Matrix, ulpReArrangeCol, ulCheLength, ulCodeLength);
     cout << "after Gaussian Elimination: ";
     getTime();
-    // coutmat(P_Mats, row * zLength, columns * zLength);
-    /// 产生生成矩阵校验关系-编码使用
-    getParityPoint(parityBit, P_Mats_GM, row * zLength, columns * zLength);
 
-    for (int i = 0; i < row; i++) {
-        free(H_base[i]);
-    }
-    for (int i = 0; i < row * zLength; i++) {
-        free(P_Mats_GM[i]);
-    }
+    delete[] BaseMatrix;
+    delete[] LDPC_Matrix;
 }
 
 /**
@@ -457,17 +492,14 @@ void LDPC_5G::blockSegmentation(int *bitAddCRC, vector<int *> &blockBit) {
 * @param afterEncode 编码之后的码块
 */
 void LDPC_5G::LDPC_Fast_Encode(vector<int *> &blockBit, vector<int *> &afterEncode) {
-    int temp = 0, i = 0, j = 0, k = 0, l = 0;
-    for (i = 0; i < blockNum; i++) {
+    int *outCodeWords = new int[blockCodeLength + 2 * zLength];
+    for (int i = 0; i < blockNum; i++) {
         // 将信息部分信息bit复制到结果
-        memcpy(afterEncode[i], blockBit[i] + 2 * zLength, (blockLength - 2 * zLength) * sizeof(int));
-        for (k = 0, j = blockLength - 2 * zLength; j < blockCodeLength; j++, k++) {
-            temp = 0;
-            for (l = 0; l < parityBit[k].size(); l++)
-                temp += blockBit[i][parityBit[k][l]];
-            afterEncode[i][j] = temp % 2;
-        }
+        memset(outCodeWords, 0, sizeof(int) * (blockCodeLength + 2 * zLength));
+        SAM_LDPC_Fast_Encoder(blockBit[i], outCodeWords, P_Matrix, ulpReArrangeCol, blockCodeLength + 2 * zLength, blockCodeLength - blockLength);
+        memcpy(afterEncode[i], outCodeWords + 2 * zLength, blockCodeLength * sizeof(int));
     }
+    delete[] outCodeWords;
 }
 
 
@@ -499,7 +531,8 @@ void LDPC_5G::deRateMatch(double *channelInput, vector<double *> &deRateMatchLLR
 void LDPC_5G::init() {
     crcInit();
     int infLengthCRC = infLength + globalCRCLength;
-
+    row = type == 1 ? 46 : 42;
+    columns = type == 1 ? 68 : 52;
     //默认方案1配置
     int Kcb = type == 1 ? 8448 : 3840;  //单个码块最大长度
     int Kb = type == 1 ? 22 : getKbGraph2(infLengthCRC);
@@ -509,10 +542,9 @@ void LDPC_5G::init() {
         blockNum = 1;
         blockInfBitLength.push_back(infLengthCRC);
         blockCRCType = globalCRCType;
-        blockCodeLength = globalCRCLength;
+        blockCRCLength = globalCRCLength;
     } else {
         blockNum = ceil(infLengthCRC * 1.0 / (Kcb - blockCRCLength));
-
         int usualBlockInfLength = (infLengthCRC + blockNum * blockCRCLength) / blockNum;
         for (int i = 0; i < blockNum - 1; i++)
             blockInfBitLength.push_back(usualBlockInfLength);
@@ -734,8 +766,12 @@ int LDPC_5G::decode(double *channelLLR, double *DECOutputLLR, const int decodeTy
 int LDPC_5G::decode(double *channelLLR, int *outBit, const int decodeType, const int maxIter) {
     deRateMatch(channelLLR, deRateMatchLLR);
 
-    int iter = BP_AWGNC(deRateMatchLLR, bpDecodeLLR, decodeType, maxIter);
+    double *dpDecoding = new double[blockCodeLength + 2 * zLength];
+    double *dpDECOutputLLR = new double[blockCodeLength + 2 * zLength];
 
+    for (int i = 0; i < blockNum; i++) {
+        Decoder_AWGN(ulpVarDis, ulpCheDis, deRateMatchLLR[i], dpDecoding, dpDECOutputLLR, blockCodeLength + 2 * zLength, blockCodeLength - blockLength, wVarDeg, wCheDeg, ulIterMax, bypInforbits, ulpReArrangeCol);
+    }
     int index = 0;
     for (int i = 0; i < blockNum; i++) {
         for (int j = 0; j < blockInfBitLength[i] - blockCRCLength; j++) {

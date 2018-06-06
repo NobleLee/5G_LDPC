@@ -37,7 +37,8 @@ private:
     int blockCRCType = 1;
     // 提案中固定为24
     int blockCRCLength;
-
+    int row;
+    int columns;
     /// 编码前，每个码块的长度，后有填充0的元素
     int blockLength;
     /// 编码之后的码块长度
@@ -58,8 +59,12 @@ private:
     vector<vector<int>> checkH;
     /// 存放crc多项式数组
     vector<int *> crcList;
-    //  存放扩展校验矩阵
-    int **P_Mats;
+    ///  存放真正的校验矩阵
+    unsigned short *P_Matrix;
+    /// 译码使用
+    unsigned long *ulpReArrangeCol;
+    long *ulpVarDis;
+    long *ulpCheDis;
     /// 临时空间
     int *CRCTemp;
     int *bitAddCRC;
@@ -82,6 +87,18 @@ private:
     void tempSpaceInit();
 
     void rateMatchPositionInit();
+
+    /***
+     *
+     * 根据LDPC码的矩阵，得到其按行顺序和列顺序排列的1的位置
+     * @param t_bypMatrix   LDPC码矩阵(该矩阵储存方式如MATLAB，按列读取)
+     * @param t_ulRow 矩阵的行数
+     * @param t_ulCol 矩阵的列数
+     * @param t_VarDeg 矩阵的变量节点度
+     * @param t_CheDeg  矩阵的校验节点度
+     */
+    bool SAM_Position_Decetion(unsigned short *t_bypMatrix, unsigned long t_ulRow, unsigned long t_ulCol, unsigned short t_VarDeg, unsigned short t_CheDeg);
+
 
     bool isVaildCode(int *decodeLLRJudge, vector<vector<int>> &checkH);
 
@@ -145,9 +162,10 @@ public:
             delete[]  bpDecodeLLR[i];
             delete[] bpIterLLR[i];
         }
-        for (int i = 0; i < parityBit.size(); i++) {
-            free(P_Mats[i]);
-        }
+        delete[] P_Matrix;
+        delete[] ulpReArrangeCol;
+        delete[] ulpVarDis;
+        delete[] ulpCheDis;
     }
 };
 

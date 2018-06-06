@@ -12,6 +12,7 @@
 #include <string>
 #include <windows.h>
 #include <fstream>
+
 using std::vector;
 using std::string;
 
@@ -56,6 +57,53 @@ void readMatrixFromFile(string &filename, vector<vector<int>> &parityMats);
 */
 void expendParityMatrix(int **P_Mats, int **H_base, const int row, const int columns, const int zLength);
 
+void SAM_expendParityMatrix(unsigned short *LDPC_Matrix, long *BaseMatrix, const int row, const int columns, const int zLength);
+
+
+/***
+ * 高斯消元
+ * @param t_LDPC_Matrix
+ * @param t_P_Matrix
+ * @param t_ulpReArrangeCol
+ * @param t_ulCheLength
+ * @param t_ulCodeLength
+ * @return
+ */
+bool SAM_Gaussian_Elimination(unsigned short *t_LDPC_Matrix, unsigned short *t_P_Matrix, unsigned long *t_ulpReArrangeCol, unsigned long t_ulCheLength, unsigned long t_ulCodeLength);
+
+/**
+ * 信道快速编码
+ * @param t_bypInforbits 待编码bit
+ * @param t_bypCodeWords 编码之后的bit
+ * @param P_Matrix 校验矩阵
+ * @param ulpReArrangeCol 需要进行行列交换的位置
+ * @param t_ulCodeLength 输出的码字长度
+ * @param t_ulCheLength  校验bit的长度
+ * @return
+ */
+bool SAM_LDPC_Fast_Encoder(int *t_bypInforbits, int *t_bypCodeWords, unsigned short *P_Matrix,
+                           unsigned long *ulpReArrangeCol, unsigned long t_ulCodeLength, unsigned long t_ulCheLength);
+
+/**
+ * Decoding in AWGN Channel
+ * @param t_lpVarDis 监督矩阵
+ * @param t_lpCheDis 监督矩阵
+ * @param t_dpChannelOut 信道输出，译码器输入（此处为LLR值）
+ * @param t_dpDecoding 译码器输出
+ * @param t_dpLLR  输出LLR值(外信息)
+ * @param t_ulCodeLength 码长
+ * @param t_ulCheLength 校验方程数
+ * @param t_byVarDeg 变量节点度
+ * @param t_byCheDeg 校验节点度
+ * @param t_ulIterMax  最大迭代次数
+ * @param bypInforbits
+ * @param ulpReArrangeCol
+ * @return 满足所有校验方程返回1，否则返回0
+ */
+bool Decoder_AWGN(long *t_lpVarDis, long *t_lpCheDis, double *t_dpChannelOut, double *t_dpDecoding, double *t_dpLLR, unsigned long t_ulCodeLength,
+                  unsigned long t_ulCheLength, unsigned short t_byVarDeg, unsigned short t_byCheDeg, unsigned long t_ulIterMax, unsigned short *bypInforbits,
+                  unsigned long *ulpReArrangeCol);
+
 /**
 * 提取生成校验bit的信息位的索引
 * @param res 索引存放容器
@@ -80,6 +128,7 @@ void writeToTxt(int *uncoded_bits, const char *filename, unsigned long length);
 
 /* 将矩阵写到txt文件中 */
 void writeMatToText(int **uncoded_bits, const char *filename, unsigned long row, unsigned long col);
+
 void writeMatToText(double *uncoded_bits, const char *filename, unsigned long length);
 
 #endif //INC_5G_LDPC_LDPC_HELPER_H

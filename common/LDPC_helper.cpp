@@ -6,7 +6,9 @@
 #include <iostream>
 #include <cstdlib>
 #include<fstream>
+#include <cmath>
 #include "LDPC_helper.h"
+#include "LDPC_5G.h"
 
 
 using namespace std;
@@ -168,6 +170,356 @@ void expendParityMatrix(int **P_Mats, int **H_base, const int row, const int col
         }
     }
 }
+
+/***
+ * 三星-对基础矩阵进行扩展
+ * @param LDPC_Matrix
+ * @param BaseMatrix
+ * @param row
+ * @param columns
+ * @param zLength
+ */
+void SAM_expendParityMatrix(unsigned short *LDPC_Matrix, long *BaseMatrix, const int row, const int columns, const int zLength) {
+    unsigned long ultemp1, ultemp2, ultemp3, temp;
+    for (ultemp1 = 0; ultemp1 < columns; ultemp1++) {
+        for (ultemp2 = 0; ultemp2 < row; ultemp2++) {
+            if (BaseMatrix[ultemp2 * columns + ultemp1] == -1) {
+                continue;
+            }
+            for (ultemp3 = 0; ultemp3 < zLength; ultemp3++) {
+                temp = (BaseMatrix[ultemp2 * columns + ultemp1] + ultemp3) % zLength;
+                LDPC_Matrix[(ultemp1 * zLength + ultemp3) * row * zLength + ultemp2 * zLength + temp] = 1;
+            }
+        }
+    }
+}
+
+
+/***
+ * 高斯消元
+ * @param t_LDPC_Matrix
+ * @param t_P_Matrix
+ * @param t_ulpReArrangeCol
+ * @param t_ulCheLength
+ * @param t_ulCodeLength
+ * @return
+ */
+bool SAM_Gaussian_Elimination(unsigned short *t_LDPC_Matrix, unsigned short *t_P_Matrix, unsigned long *t_ulpReArrangeCol, unsigned long t_ulCheLength, unsigned long t_ulCodeLength) {
+    unsigned long ulTemp1, ulTemp2, ulTemp3, ulMiddle1, ulMiddle2;
+
+    for (ulTemp1 = 0; ulTemp1 < t_ulCheLength; ulTemp1++) {
+        cout << ulTemp1 << endl;
+        ulMiddle1 = ulTemp1;
+        while (ulMiddle1 < t_ulCodeLength && t_LDPC_Matrix[ulTemp1 + ulMiddle1 * t_ulCheLength] == 0) {
+            for (ulTemp2 = ulTemp1 + 1; ulTemp2 < t_ulCheLength; ulTemp2++) {
+                if (t_LDPC_Matrix[ulTemp2 + ulMiddle1 * t_ulCheLength] != 0) {
+                    break;
+                }
+            }
+            ulMiddle1++;
+        }
+
+        if (ulMiddle1 >= t_ulCodeLength) {
+            return 0;
+        }
+
+        if (ulMiddle1 != ulTemp1) {
+            t_ulpReArrangeCol[ulTemp1] = ulMiddle1;
+            for (ulTemp2 = 0; ulTemp2 < t_ulCheLength; ulTemp2++) {
+                ulMiddle2 = t_LDPC_Matrix[ulTemp2 + ulTemp1 * t_ulCheLength];
+                t_LDPC_Matrix[ulTemp2 + ulTemp1 * t_ulCheLength] = t_LDPC_Matrix[ulTemp2 + ulMiddle1 * t_ulCheLength];
+                t_LDPC_Matrix[ulTemp2 + ulMiddle1 * t_ulCheLength] = ulMiddle2;
+            }
+        }
+
+        if (t_LDPC_Matrix[ulTemp1 * t_ulCheLength + ulTemp1] == 0) {
+            for (ulTemp2 = ulTemp1 + 1; ulTemp2 < t_ulCheLength; ulTemp2++) {
+                if (t_LDPC_Matrix[ulTemp2 + ulTemp1 * t_ulCheLength] != 0) {
+                    ulMiddle1 = ulTemp2;
+                    for (ulTemp3 = ulTemp1; ulTemp3 < t_ulCodeLength; ulTemp3++) {
+                        t_LDPC_Matrix[ulTemp1 + ulTemp3 * t_ulCheLength] = (t_LDPC_Matrix[ulMiddle1 + ulTemp3 * t_ulCheLength] + t_LDPC_Matrix[ulTemp1 + ulTemp3 * t_ulCheLength]) % 2;
+                    }
+                }
+            }
+        }
+
+        for (ulTemp2 = 0; ulTemp2 < t_ulCheLength; ulTemp2++) {
+            if (t_LDPC_Matrix[ulTemp1 * t_ulCheLength + ulTemp2] != 0) {
+                if (ulTemp2 != ulTemp1) {
+                    for (ulTemp3 = ulTemp1; ulTemp3 < t_ulCodeLength; ulTemp3++) {
+                        t_LDPC_Matrix[ulTemp3 * t_ulCheLength + ulTemp2] = (t_LDPC_Matrix[ulTemp3 * t_ulCheLength + ulTemp2] + t_LDPC_Matrix[ulTemp3 * t_ulCheLength + ulTemp1]) % 2;
+                    }
+                }
+            }
+        }
+    }
+
+    for (ulTemp1 = t_ulCheLength; ulTemp1 < t_ulCodeLength; ulTemp1++) {
+        for (ulTemp2 = 0; ulTemp2 < t_ulCheLength; ulTemp2++) {
+            t_P_Matrix[(ulTemp1 - t_ulCheLength) * t_ulCheLength + ulTemp2] = t_LDPC_Matrix[ulTemp1 * t_ulCheLength + ulTemp2];
+        }
+    }
+
+    return 1;
+}
+
+
+/**
+ * 信道快速编码
+ * @param t_bypInforbits 待编码bit
+ * @param t_bypCodeWords 编码之后的bit
+ * @param P_Matrix 校验矩阵
+ * @param ulpReArrangeCol 需要进行行列交换的位置
+ * @param t_ulCodeLength 输出的码字长度
+ * @param t_ulCheLength  校验bit的长度
+ * @return
+ */
+bool SAM_LDPC_Fast_Encoder(int *t_bypInforbits, int *t_bypCodeWords, unsigned short *P_Matrix,
+                           unsigned long *ulpReArrangeCol, unsigned long t_ulCodeLength, unsigned long t_ulCheLength) {
+    unsigned long ulInfBitLength = t_ulCodeLength - t_ulCheLength;
+    unsigned long ulTemp1, ulTemp2, ulMiddle;
+
+    unsigned short *ulCheckBits = new unsigned short[t_ulCheLength];
+
+    for (ulTemp1 = 0; ulTemp1 < t_ulCheLength; ulTemp1++) {
+        ulMiddle = 0;
+        for (ulTemp2 = 0; ulTemp2 < ulInfBitLength; ulTemp2++) {
+            ulMiddle += P_Matrix[ulTemp1 + ulTemp2 * t_ulCheLength] * t_bypInforbits[ulTemp2];
+        }
+        ulCheckBits[ulTemp1] = ulMiddle % 2;
+    }
+
+    for (ulTemp1 = 0; ulTemp1 < t_ulCodeLength; ulTemp1++) {
+        if (ulTemp1 < t_ulCheLength) {
+            t_bypCodeWords[ulTemp1] = ulCheckBits[ulTemp1];
+        } else {
+            t_bypCodeWords[ulTemp1] = t_bypInforbits[ulTemp1 - t_ulCheLength];
+        }
+    }
+
+    for (long ulTemp1 = t_ulCheLength - 1; ulTemp1 >= 0; ulTemp1--) {
+        if (ulpReArrangeCol[ulTemp1] != 0) {
+            ulMiddle = t_bypCodeWords[ulTemp1];
+            t_bypCodeWords[ulTemp1] = t_bypCodeWords[ulpReArrangeCol[ulTemp1]];
+            t_bypCodeWords[ulpReArrangeCol[ulTemp1]] = ulMiddle;
+        }
+    }
+
+    delete[] ulCheckBits;
+
+    return 1;
+}
+
+bool ExtractInforBits(double *t_bypCodeWords, unsigned long *ulpReArrangeCol, unsigned short *t_bypInforbits, unsigned long t_ulCodeLength, unsigned long t_ulCheLength) {
+    unsigned long ulMiddle;
+    for (long ulTemp1 = 0; ulTemp1 < t_ulCheLength; ulTemp1++) {
+        if (ulpReArrangeCol[ulTemp1] != 0) {
+            ulMiddle = t_bypCodeWords[ulTemp1];
+            t_bypCodeWords[ulTemp1] = t_bypCodeWords[ulpReArrangeCol[ulTemp1]];
+            t_bypCodeWords[ulpReArrangeCol[ulTemp1]] = ulMiddle;
+        }
+    }
+
+    for (unsigned long ulTemp1 = t_ulCheLength; ulTemp1 < t_ulCodeLength; ulTemp1++) {
+        t_bypInforbits[ulTemp1 - t_ulCheLength] = t_bypCodeWords[ulTemp1];
+    }
+    return 1;
+}
+
+
+/**
+ * Decoding in AWGN Channel
+ * @param t_lpVarDis 监督矩阵
+ * @param t_lpCheDis 监督矩阵
+ * @param t_dpChannelOut 信道输出，译码器输入（此处为LLR值）
+ * @param t_dpDecoding 译码器输出
+ * @param t_dpLLR  输出LLR值(外信息)
+ * @param t_ulCodeLength 码长
+ * @param t_ulCheLength 校验方程数
+ * @param t_byVarDeg 变量节点度
+ * @param t_byCheDeg 校验节点度
+ * @param t_ulIterMax  最大迭代次数
+ * @param bypInforbits
+ * @param ulpReArrangeCol
+ * @return 满足所有校验方程返回1，否则返回0
+ */
+bool Decoder_AWGN(long *t_lpVarDis, long *t_lpCheDis, double *t_dpChannelOut, double *t_dpDecoding, double *t_dpLLR, unsigned long t_ulCodeLength,
+                  unsigned long t_ulCheLength, unsigned short t_byVarDeg, unsigned short t_byCheDeg, unsigned long t_ulIterMax, unsigned short *bypInforbits, unsigned long *ulpReArrangeCol) {
+
+    unsigned short wVarDeg, wCheDeg;
+    unsigned long ulCount, ulNum;
+    unsigned long ulInfLength = t_ulCodeLength - t_ulCheLength;
+    long lCheIndex, lVarIndex;
+
+    wVarDeg = t_byVarDeg;
+    wCheDeg = t_byCheDeg;
+    double *dpLLRRec = (double *) malloc(t_ulCodeLength * sizeof(double));
+//  t_dpCheSta 校验节点状态，大小为校验节点长，作为先验信息输入，窗译码使用，译整个码直接全设为1
+    double *t_dpCheSta = (double *) malloc(t_ulCheLength * sizeof(double));
+    double *dpVar2Che = (double *) malloc(t_ulCheLength * wCheDeg * sizeof(double));
+    double dMiddle = 0;
+    int *bypSyn = (int *) malloc(t_ulCheLength * sizeof(int));
+
+    unsigned char byMiddle;
+
+    double *dpProductForward = (double *) malloc(t_ulCheLength * wCheDeg * sizeof(double));
+    double *dpProductBackward = (double *) malloc(t_ulCheLength * wCheDeg * sizeof(double));
+    double *dpMiddle = (double *) malloc(t_ulCodeLength * wVarDeg * sizeof(double));
+    double *dpSumForward = (double *) malloc(t_ulCodeLength * wVarDeg * sizeof(double));
+    double *dpSumBackward = (double *) malloc(t_ulCodeLength * wVarDeg * sizeof(double));
+
+//------------------
+    for (unsigned long ulTemp = 0; ulTemp < t_ulCodeLength * wVarDeg; ulTemp++) {
+        dpMiddle[ulTemp] = 0.0;
+    }
+//--------------------
+    for (unsigned long ulTemp = 0; ulTemp < t_ulCodeLength; ulTemp++) {
+        dpLLRRec[ulTemp] = t_dpChannelOut[ulTemp];
+    }
+    for (unsigned long ulTemp = 0; ulTemp < t_ulCheLength; ulTemp++) {
+        t_dpCheSta[ulTemp] = 1.0;
+        for (unsigned short wDegTemp = 0; wDegTemp < wCheDeg; wDegTemp++) {
+            lVarIndex = (long) t_lpCheDis[ulTemp * wCheDeg + wDegTemp];
+            dpVar2Che[ulTemp * wCheDeg + wDegTemp] = 0.0;
+            if (lVarIndex >= 0) {
+                dpVar2Che[ulTemp * wCheDeg + wDegTemp] += dpLLRRec[lVarIndex];
+            }
+        }
+    }
+
+
+    ulCount = 0;
+    while (1) {
+        ulCount++;
+        for (unsigned long ulTemp = 0; ulTemp < t_ulCheLength; ulTemp++) {
+            dpProductForward[ulTemp * wCheDeg] = t_dpCheSta[ulTemp];
+            dpProductBackward[ulTemp * wCheDeg] = 1.0;
+            for (unsigned short wDegTemp = 1; wDegTemp < wCheDeg; wDegTemp++) {
+                lVarIndex = (long) t_lpCheDis[ulTemp * wCheDeg + wDegTemp - 1];
+                if (lVarIndex >= 0) {
+                    dpProductForward[ulTemp * wCheDeg + wDegTemp] = dpProductForward[ulTemp * wCheDeg + wDegTemp - 1] * tanh(0.5 * dpVar2Che[ulTemp * wCheDeg + wDegTemp - 1]);
+                } else {
+                    dpProductForward[ulTemp * wCheDeg + wDegTemp] = dpProductForward[ulTemp * wCheDeg + wDegTemp - 1];
+                }
+                lVarIndex = (long) t_lpCheDis[(ulTemp + 1) * wCheDeg - wDegTemp];
+                if (lVarIndex >= 0) {
+                    dpProductBackward[ulTemp * wCheDeg + wDegTemp] = dpProductBackward[ulTemp * wCheDeg + wDegTemp - 1] * tanh(0.5 * dpVar2Che[(ulTemp + 1) * wCheDeg - wDegTemp]);
+                } else {
+                    dpProductBackward[ulTemp * wCheDeg + wDegTemp] = dpProductBackward[ulTemp * wCheDeg + wDegTemp - 1];
+                }
+            }
+
+        }
+
+        for (unsigned long ulTemp = 0; ulTemp < t_ulCodeLength; ulTemp++) {
+            for (unsigned short wDegTemp = 0; wDegTemp < wVarDeg; wDegTemp++) {
+                lCheIndex = (long) t_lpVarDis[ulTemp * wVarDeg + wDegTemp];
+                if (lCheIndex >= 0) {
+                    for (unsigned short wTemp = 0; wTemp < wCheDeg; wTemp++) {
+                        if ((long) t_lpCheDis[lCheIndex * wCheDeg + wTemp] == ulTemp) {
+                            dMiddle = dpProductForward[wCheDeg * lCheIndex + wTemp] * dpProductBackward[wCheDeg * (lCheIndex + 1) - wTemp - 1];
+                            break;
+                        }
+                    }
+                    if ((dMiddle + 1 < GAP) && (dMiddle + 1 >= 0)) {
+                        dpMiddle[ulTemp * wVarDeg + wDegTemp] = -1e3;
+                    } else if ((1 - dMiddle < GAP) && (1 - dMiddle >= 0)) {
+                        dpMiddle[ulTemp * wVarDeg + wDegTemp] = 1e3;
+                    } else {
+                        dpMiddle[ulTemp * wVarDeg + wDegTemp] = log((1 + dMiddle) / (1 - dMiddle));
+                    }
+                }
+            }
+        }
+
+        for (unsigned long ulTemp = 0; ulTemp < t_ulCodeLength; ulTemp++) {
+            dpSumForward[wVarDeg * ulTemp] = 0.0;
+
+            dpSumBackward[wVarDeg * ulTemp] = 0.0;
+
+            for (unsigned short wDegTemp = 1; wDegTemp < wVarDeg; wDegTemp++) {
+                if ((long) t_lpVarDis[ulTemp * wVarDeg + wDegTemp - 1] >= 0) {
+                    dpSumForward[ulTemp * wVarDeg + wDegTemp] = dpSumForward[ulTemp * wVarDeg + wDegTemp - 1] + dpMiddle[ulTemp * wVarDeg + wDegTemp - 1];
+                } else {
+                    dpSumForward[ulTemp * wVarDeg + wDegTemp] = dpSumForward[ulTemp * wVarDeg + wDegTemp - 1];
+                }
+                if ((long) t_lpVarDis[(ulTemp + 1) * wVarDeg - wDegTemp] >= 0) {
+                    dpSumBackward[ulTemp * wVarDeg + wDegTemp] = dpSumBackward[ulTemp * wVarDeg + wDegTemp - 1] + dpMiddle[(ulTemp + 1) * wVarDeg - wDegTemp];
+                } else {
+                    dpSumBackward[ulTemp * wVarDeg + wDegTemp] = dpSumBackward[ulTemp * wVarDeg + wDegTemp - 1];
+                }
+            }
+        }
+
+        for (unsigned short wDegTemp = 0; wDegTemp < wCheDeg; wDegTemp++) {
+            for (unsigned long ulTemp = 0; ulTemp < t_ulCheLength; ulTemp++) {
+                lVarIndex = (long) t_lpCheDis[ulTemp * wCheDeg + wDegTemp];
+                if (lVarIndex >= 0) {
+                    for (unsigned short wTemp = 0; wTemp < wVarDeg; wTemp++) {
+                        lCheIndex = (long) t_lpVarDis[lVarIndex * wVarDeg + wTemp];
+                        if (lCheIndex == ulTemp) {
+                            dpVar2Che[ulTemp * wCheDeg + wDegTemp] = dpSumForward[lVarIndex * wVarDeg + wTemp] + dpSumBackward[(lVarIndex + 1) * wVarDeg - wTemp - 1] + dpLLRRec[lVarIndex];
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        for (unsigned long ulTemp = 0; ulTemp < t_ulCodeLength; ulTemp++) {
+            t_dpLLR[ulTemp] = dpSumForward[ulTemp * wVarDeg + 1] + dpSumBackward[(ulTemp + 1) * wVarDeg - 1] + dpLLRRec[ulTemp];
+            if (t_dpLLR[ulTemp] > 0) {
+                t_dpDecoding[ulTemp] = 0;
+            } else {
+                t_dpDecoding[ulTemp] = 1;
+            }
+        }
+
+
+        ulNum = 0;
+        for (unsigned long ulTemp = 0; ulTemp < t_ulCheLength; ulTemp++) {
+            if (t_dpCheSta[ulTemp] >= 0) {
+                byMiddle = 0;
+            } else {
+                byMiddle = 1;
+            }
+            for (unsigned short wTemp = 0; wTemp < wCheDeg; wTemp++) {
+                lVarIndex = (long) t_lpCheDis[ulTemp * wCheDeg + wTemp];
+                if (lVarIndex >= 0) {
+                    byMiddle += (unsigned char) t_dpDecoding[lVarIndex];
+                }
+            }
+            bypSyn[ulTemp] = byMiddle % 2;
+            if (bypSyn[ulTemp] != 0) {
+                ulNum++;
+            }
+        }
+
+        ExtractInforBits(t_dpDecoding, ulpReArrangeCol, bypInforbits, t_ulCodeLength, t_ulCheLength);
+
+        if ((ulNum == 0 && check_CRC(bypInforbits, ulInfLength)) || (ulCount == t_ulIterMax)) {
+            break;
+        }
+    }
+
+
+    free(bypSyn);
+    free(dpLLRRec);
+    free(t_dpCheSta);
+    free(dpVar2Che);
+    free(dpProductForward);
+    free(dpProductBackward);
+    free(dpSumForward);
+    free(dpSumBackward);
+    free(dpMiddle);
+
+    if (ulNum == 0) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
 
 /**
 * 提取生成校验bit的信息位的索引

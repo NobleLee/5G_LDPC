@@ -12,12 +12,12 @@ using namespace std;
 
 int main() {
     getTime();
-    int codelength = 2000;
-    int inflength = 700;
-    int type = 2;
+    int codelength = 6800;
+    int inflength = 2176;
+    int type = 1;
     int rv = 3;
     int mod = 2;
-    double dSNR = 10.0; //
+    double dSNR = 1.5; //
 
     double dLinearSNR = pow(10.0, dSNR / 10);
     double dStan;

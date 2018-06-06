@@ -306,10 +306,10 @@ double gauss(double mean, double sigma, long int *s) {
     x = x - 6.0;
     y = mean + x * sigma;
     return (y);
-
 }
 
 void Channel_Gaussian(unsigned long t_ulLength, double *t_dpChannelIn, double *t_dpChannelOut, double t_dMean, double t_dStD) {
+
     double *dpNoise = new double[t_ulLength];
     long seed = rand();
 
